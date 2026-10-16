@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "check": "node --experimental-strip-types src/lib/pricing.check.ts"
+    "check": "npx tsx src/lib/pricing.check.ts"
   },
   "dependencies": {
     "lucide-react": "^0.474.0",

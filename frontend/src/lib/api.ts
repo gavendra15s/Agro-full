@@ -1,10 +1,15 @@
 import type {
   Booking,
   Farm,
+  FarmRiskOverview,
+  HazardScore,
+  IncidentReport,
   LandslideReport,
   MonthlySafetyRecord,
   NotificationLog,
+  OfficialAlert,
   PaymentEscrow,
+  SourceRun,
   Warning,
 } from "@/lib/types";
 import {
@@ -371,6 +376,13 @@ export const api = {
       }
       return { success: false, error: res.error || "Failed to update seat capacity" };
     },
+
+    /** Multi-hazard risk overview (landslide, flood, cyclone, heat, thunderstorm). */
+    async getRisk(slug: string, date?: string): Promise<{ success: boolean; data?: FarmRiskOverview; error?: string }> {
+      const query = date ? `?date=${encodeURIComponent(date)}` : "";
+      const res = await request<FarmRiskOverview>(`/farms/${slug}/risk${query}`);
+      return res;
+    },
   },
 
   // 2. Bookings
@@ -397,6 +409,32 @@ export const api = {
         body: JSON.stringify(payload),
       });
       return res;
+    },
+
+    /** 15-minute hold on seat availability before checkout completion. */
+    async createHold(payload: {
+      farm_id: number;
+      stay_start_date: string;
+      stay_end_date: string;
+      total_guests: number;
+      cab_pickup_location?: string;
+      cab_pincode?: string;
+    }): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>("/bookings/hold", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+    },
+
+    /** Weather-aware zero-penalty rescheduling or cancellation. */
+    async reschedule(
+      id: number | string,
+      payload: { new_start_date?: string; new_end_date?: string; cancel?: boolean; reason?: string }
+    ): Promise<{ success: boolean; data?: any; error?: string; message?: string }> {
+      return await request<any>(`/bookings/${id}/reschedule`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
     },
   },
 
@@ -523,6 +561,21 @@ export const api = {
         body: JSON.stringify(payload),
       });
     },
+
+    async getById(id: number | string): Promise<{ success: boolean; data?: IncidentReport; error?: string }> {
+      return await request<IncidentReport>(`/reports/${id}`);
+    },
+
+    async submitDecision(
+      id: number | string,
+      decision: "Confirm" | "Reject",
+      reason?: string
+    ): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>(`/reports/${id}/decision`, {
+        method: "POST",
+        body: JSON.stringify({ decision, reason }),
+      });
+    },
   },
 
   // 6. Safety & Matrix
@@ -554,6 +607,41 @@ export const api = {
         return res.data;
       }
       return null;
+    },
+
+    /** Guest / user 'I'm Safe' acknowledgment for dispatched official alerts. */
+    async acknowledgeAlert(
+      alertId: number | string,
+      bookingId?: number | string,
+      status: "SAFE" | "NEED_ASSISTANCE" = "SAFE"
+    ): Promise<{ success: boolean; error?: string }> {
+      return await request<any>(`/safety/alerts/${alertId}/ack`, {
+        method: "POST",
+        body: JSON.stringify({ booking_id: bookingId, status }),
+      });
+    },
+
+    /** Monitor freshness & circuit status of IMD, SACHET, Open-Meteo, NASA. */
+    async getSourceHealth(): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>("/safety/sources/health");
+    },
+
+    /** Admin simulation test alert trigger (CAP 1.2 test flow). */
+    async simulateAlert(payload: {
+      farm_id?: number | string;
+      source?: string;
+      event: string;
+      level: "Yellow" | "Orange" | "Red";
+      district_name?: string;
+      state?: string;
+      headline: string;
+      description: string;
+      duration_hours?: number;
+    }): Promise<{ success: boolean; data?: any; error?: string }> {
+      return await request<any>("/safety/simulate-alert", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
     },
   },
 

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { BookingCard } from "@/components/farm/booking-card";
 import { FarmGallery } from "@/components/farm/farm-gallery";
+import { RiskCard } from "@/components/farm/risk-card";
 import { Card } from "@/components/ui/card";
 import { SafetyBar } from "@/components/ui/safety-badge";
 import { api } from "@/lib/api";
@@ -94,6 +95,10 @@ export default async function FarmPage({
 
           <div className="mt-6">
             <FarmGallery images={farm.images} alt={farm.name} />
+          </div>
+
+          <div className="mt-8">
+            <RiskCard farmSlug={farm.slug} initialDate={one(sp.checkIn)} />
           </div>
 
           <Card className="mt-8 p-5 sm:p-7">

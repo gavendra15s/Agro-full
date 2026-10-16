@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Minus, Plus, ShieldCheck } from "lucide-react";
+import { Clock, Minus, Plus, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { api } from "@/lib/api";
@@ -26,6 +26,7 @@ export function BookingCard({ farm, defaults }: Props) {
   const [guests, setGuests] = useState(2);
   const [availableSeats, setAvailableSeats] = useState<number | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
+  const [holding, setHolding] = useState(false);
 
   const nights = nightsBetween(checkIn, checkOut);
   // Same quote the checkout page charges — the two must never disagree.
@@ -67,18 +68,38 @@ export function BookingCard({ farm, defaults }: Props) {
     setGuests(Math.min(maxSelectable, Math.max(1, Math.floor(next))));
   }
 
-  function book() {
+  async function book() {
     const params = new URLSearchParams({
       farm: farm.slug,
       checkIn,
       checkOut,
       guests: String(guests),
     });
-    const checkoutUrl = `/checkout?${params.toString()}`;
+
     if (!isAuthenticated) {
+      const checkoutUrl = `/checkout?${params.toString()}`;
       router.push(`/login?redirect=${encodeURIComponent(checkoutUrl)}`);
-    } else {
-      router.push(checkoutUrl);
+      return;
+    }
+
+    setHolding(true);
+    try {
+      if (farm.id) {
+        const holdRes = await api.bookings.createHold({
+          farm_id: farm.id,
+          stay_start_date: checkIn,
+          stay_end_date: checkOut,
+          total_guests: guests,
+        });
+        if (holdRes.success && holdRes.data?.booking_id) {
+          params.set("holdId", String(holdRes.data.booking_id));
+        }
+      }
+    } catch (err) {
+      console.warn("Hold creation fallback:", err);
+    } finally {
+      setHolding(false);
+      router.push(`/checkout?${params.toString()}`);
     }
   }
 
@@ -193,13 +214,13 @@ export function BookingCard({ farm, defaults }: Props) {
 
       <Button
         onClick={book}
-        disabled={nights === 0 || soldOut}
+        disabled={nights === 0 || soldOut || holding}
         size="lg"
         className="mt-5 w-full flex-col gap-0.5"
       >
-        <span>Book &amp; Hold in Escrow</span>
+        <span>{holding ? "Holding Seats (15m)..." : "Book & Hold in Escrow"}</span>
         <span className="text-[10px] font-medium tracking-wider text-white/80 uppercase">
-          Safe transaction guaranteed
+          15-Min Inventory Hold • Safe Escrow
         </span>
       </Button>
 
