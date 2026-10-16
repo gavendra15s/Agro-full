@@ -10,7 +10,8 @@
     "create-admin": "tsx src/scripts/createAdmin.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test": "tsx --test src/tests/riskEngine.test.ts src/tests/bookingEngine.test.ts src/tests/photoVerification.test.ts src/tests/paymentWebhook.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
@@ -19,7 +20,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "jsonwebtoken": "^9.0.2",
-    "nodemailer": "^9.0.5",
+    "nodemailer": "^10.1.2",
     "razorpay": "^2.9.8",
     "zod": "^3.24.2"
   },

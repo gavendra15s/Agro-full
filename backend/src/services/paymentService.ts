@@ -37,3 +37,24 @@ export const verifyRazorpaySignature = (params: {
 
   return crypto.timingSafeEqual(expectedBuf, actualBuf);
 };
+
+export const verifyRazorpayWebhookSignature = (params: {
+  rawBody: Buffer | string;
+  signature: string;
+  webhookSecret?: string;
+}): boolean => {
+  const secret = params.webhookSecret || ENV.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret || !params.signature) return false;
+
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(params.rawBody)
+    .digest("hex");
+
+  const expectedBuf = Buffer.from(expected);
+  const actualBuf = Buffer.from(params.signature);
+  if (expectedBuf.length !== actualBuf.length) return false;
+
+  return crypto.timingSafeEqual(expectedBuf, actualBuf);
+};
+

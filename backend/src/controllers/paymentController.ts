@@ -1,7 +1,8 @@
 import { Response } from "express";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 import { computeBookingQuote, createBookingWithEscrow } from "../services/bookingService.js";
-import { createRazorpayOrder, verifyRazorpaySignature } from "../services/paymentService.js";
+import { createRazorpayOrder, verifyRazorpaySignature, verifyRazorpayWebhookSignature } from "../services/paymentService.js";
+import { supabase, safeInsert } from "../config/supabase.js";
 import { ENV } from "../config/env.js";
 
 export const createOrder = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
@@ -91,3 +92,126 @@ export const verifyAndCreateBooking = async (req: AuthenticatedRequest, res: Res
 
   res.status(201).json({ success: true, data: result });
 };
+
+/**
+ * Razorpay Webhook Endpoint: Listens for asynchronous payment transitions.
+ * Essential for UPI / Netbanking where the user pays on phone app or closes browser tab.
+ */
+export const handleRazorpayWebhook = async (req: any, res: Response): Promise<void> => {
+  const signature = (req.headers["x-razorpay-signature"] as string) || "";
+  const rawBody = req.rawBody || JSON.stringify(req.body);
+
+  const isValid = verifyRazorpayWebhookSignature({
+    rawBody,
+    signature,
+    webhookSecret: ENV.RAZORPAY_WEBHOOK_SECRET,
+  });
+
+  if (!isValid && ENV.NODE_ENV === "production") {
+    res.status(400).json({ success: false, error: "Invalid webhook signature" });
+    return;
+  }
+
+  const event = req.body;
+  const eventType = event.event;
+
+  console.log(`[Razorpay Webhook] Received: ${eventType} (Event ID: ${event.id || "N/A"})`);
+
+  if (eventType === "payment.captured") {
+    const paymentEntity = event.payload?.payment?.entity;
+    const orderId = paymentEntity?.order_id;
+    const paymentId = paymentEntity?.id;
+
+    if (orderId || paymentId) {
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("*, bookings(*)")
+        .or(`razorpay_order_id.eq.${orderId},gateway_ref.eq.${paymentId}`)
+        .single();
+
+      if (payment) {
+        // Secure funds in Escrow Vault
+        await supabase
+          .from("payments")
+          .update({
+            escrow_status: "Held_In_Escrow",
+            gateway_ref: paymentId,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payment.id);
+
+        if (payment.booking_id) {
+          await supabase
+            .from("bookings")
+            .update({
+              current_status: "Confirmed",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", payment.booking_id);
+
+          await supabase
+            .from("availability")
+            .update({ status: "booked" })
+            .eq("held_by_booking_id", payment.booking_id);
+        }
+
+        await safeInsert("payment_transaction_log", {
+          payment_id: payment.id,
+          transaction_type: "Charge",
+          payment_gateway_ref: paymentId,
+          amount: payment.total_charged || paymentEntity.amount / 100,
+          note: `Webhook payment.captured: Funds locked in AgroSafe Escrow Vault.`,
+        });
+      }
+    }
+  } else if (eventType === "payment.failed") {
+    const paymentEntity = event.payload?.payment?.entity;
+    const orderId = paymentEntity?.order_id;
+
+    if (orderId) {
+      const { data: payment } = await supabase
+        .from("payments")
+        .select("*, bookings(*)")
+        .eq("razorpay_order_id", orderId)
+        .single();
+
+      if (payment && payment.booking_id) {
+        await supabase
+          .from("bookings")
+          .update({ current_status: "Cancelled", updated_at: new Date().toISOString() })
+          .eq("id", payment.booking_id)
+          .eq("current_status", "Held");
+
+        await supabase.from("availability").delete().eq("held_by_booking_id", payment.booking_id);
+      }
+    }
+  } else if (eventType === "refund.processed") {
+    const refundEntity = event.payload?.refund?.entity;
+    const paymentId = refundEntity?.payment_id;
+
+    if (paymentId) {
+      const { data: payment } = await supabase.from("payments").select("*").eq("gateway_ref", paymentId).single();
+
+      if (payment) {
+        await supabase
+          .from("payments")
+          .update({
+            escrow_status: "Refunded_To_Guest",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", payment.id);
+
+        await safeInsert("payment_transaction_log", {
+          payment_id: payment.id,
+          transaction_type: "Refund",
+          payment_gateway_ref: refundEntity.id || paymentId,
+          amount: refundEntity.amount ? refundEntity.amount / 100 : payment.total_charged,
+          note: "Webhook refund.processed: Zero-fee weather refund released from Escrow Vault to traveler.",
+        });
+      }
+    }
+  }
+
+  res.status(200).json({ success: true, received: true, event: eventType });
+};
+
