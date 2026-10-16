@@ -4,13 +4,14 @@
 -- Default Password for all seed users: 'password123'
 -- =========================================================================
 
--- 1. SEED USERS (2 Hosts, 2 Guests)
--- bcrypt hash for 'password123' -> $2a$10$wO08272sC8R/0H4K6F3Cze95Z4v8mY.5u1kU5X05n1q2u6A3g6L02
+-- 1. SEED USERS (2 Hosts, 2 Guests, 1 Admin)
+-- bcrypt hash for 'password123' -> $2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq
 INSERT INTO users (id, user_type, first_name, last_name, email, password_hash, phone_number, is_verified) VALUES
-(1, 'host', 'Rohit', 'Bisht', 'rohit.bisht@example.com', '$2a$10$wO08272sC8R/0H4K6F3Cze95Z4v8mY.5u1kU5X05n1q2u6A3g6L02', '+91 98765 43210', true),
-(2, 'host', 'Vikram', 'Singh', 'vikram.singh@example.com', '$2a$10$wO08272sC8R/0H4K6F3Cze95Z4v8mY.5u1kU5X05n1q2u6A3g6L02', '+91 98765 43211', true),
-(3, 'guest', 'Arjun', 'Verma', 'arjun.verma@example.com', '$2a$10$wO08272sC8R/0H4K6F3Cze95Z4v8mY.5u1kU5X05n1q2u6A3g6L02', '+91 98765 43220', true),
-(4, 'guest', 'Pooja', 'Sharma', 'pooja.sharma@example.com', '$2a$10$wO08272sC8R/0H4K6F3Cze95Z4v8mY.5u1kU5X05n1q2u6A3g6L02', '+91 98765 43221', true)
+(1, 'host', 'Rohit', 'Bisht', 'rohit.bisht@example.com', '$2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq', '+91 98765 43210', true),
+(2, 'host', 'Vikram', 'Singh', 'vikram.singh@example.com', '$2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq', '+91 98765 43211', true),
+(3, 'guest', 'Arjun', 'Verma', 'arjun.verma@example.com', '$2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq', '+91 98765 43220', true),
+(4, 'guest', 'Pooja', 'Sharma', 'pooja.sharma@example.com', '$2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq', '+91 98765 43221', true),
+(5, 'admin', 'System', 'Admin', 'admin@example.com', '$2b$10$xew3HLg1glPa63JdvcV6r.J7sdE8Ii0jV1HjXGmSiaAx2uvfFujzq', '+91 98765 43200', true)
 ON CONFLICT (id) DO UPDATE SET
   user_type = EXCLUDED.user_type,
   first_name = EXCLUDED.first_name,
