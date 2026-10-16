@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   Bell,
@@ -37,15 +37,24 @@ export function SiteHeader() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const { user, isAuthenticated, isHost, isAdmin, logout } = useAuth();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const authed = mounted && isAuthenticated;
+  const adminRole = mounted && isAdmin;
+  const hostRole = mounted && isHost;
 
   let navItems: NavItem[] = [...BASE_NAV];
-  if (isAuthenticated) {
-    if (isAdmin) {
+  if (authed) {
+    if (adminRole) {
       navItems = [
         ...BASE_NAV,
         { href: "/admin", label: "Admin Console", isHighlight: true },
       ];
-    } else if (isHost) {
+    } else if (hostRole) {
       navItems = [
         ...BASE_NAV,
         { href: "/host", label: "My Hostings" },
@@ -101,7 +110,7 @@ export function SiteHeader() {
 
         {/* Right Action Icons & Auth Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {isAuthenticated ? (
+          {authed ? (
             <>
               {/* Notifications */}
               <Link

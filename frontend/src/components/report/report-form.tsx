@@ -40,14 +40,6 @@ export function ReportForm() {
   // Stamped after mount — rendering a clock on the server would mismatch on hydration.
   useEffect(() => setUploadedAt(new Date().toLocaleString()), []);
 
-  // Revoke the object URL when the preview changes or the form unmounts.
-  useEffect(() => {
-    const url = preview?.url;
-    return () => {
-      if (url) URL.revokeObjectURL(url);
-    };
-  }, [preview?.url]);
-
   function accept(file: File | undefined) {
     if (!file) return;
     if (!/^image\/(jpeg|png|webp)$/.test(file.type)) {
@@ -61,8 +53,46 @@ export function ReportForm() {
       return;
     }
     setError("");
-    setPreview({ url: URL.createObjectURL(file), name: file.name });
-    setUploadedAt(new Date().toLocaleString());
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      if (!dataUrl) return;
+
+      // Scale & compress image to max 1200px so it fits into persistent base64 data URL
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const optimizedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          setPreview({ url: optimizedDataUrl, name: file.name });
+        } else {
+          setPreview({ url: dataUrl, name: file.name });
+        }
+      };
+      img.onerror = () => {
+        setPreview({ url: dataUrl, name: file.name });
+      };
+      img.src = dataUrl;
+      setUploadedAt(new Date().toLocaleString());
+    };
+    reader.readAsDataURL(file);
   }
 
   function useMyLocation() {
@@ -105,11 +135,18 @@ export function ReportForm() {
 
     try {
       const res = await api.reports.create({
-        image_s3_url: preview.url || "https://picsum.photos/seed/landslide-evidence/800/600",
+        photo_url: preview.url,
+        image_s3_url: preview.url,
         latitude: Number(lat),
         longitude: Number(lng),
         location_name: `Transit Corridor (${lat}° N, ${lng}° E)`,
         details: `${hazardType}: ${details}`,
+        claimed_type: hazardType.toLowerCase().includes("landslide")
+          ? "landslide"
+          : hazardType.toLowerCase().includes("flood")
+          ? "flood"
+          : "weather_hazard",
+        is_live_camera: isLiveCamera,
       });
 
       if (!res.success) {

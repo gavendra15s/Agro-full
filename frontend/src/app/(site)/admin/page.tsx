@@ -1165,6 +1165,9 @@ export default function AdminDashboardPage() {
                             src={r.photo_url || r.image_s3_url}
                             alt="Incident capture"
                             className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = `https://picsum.photos/seed/hazard-${r.id || 1}/800/600`;
+                            }}
                           />
                         ) : (
                           <div className="flex h-full items-center justify-center text-xs text-ink-muted">

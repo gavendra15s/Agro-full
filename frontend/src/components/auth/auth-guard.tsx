@@ -26,14 +26,21 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [deniedRoleMessage, setDeniedRoleMessage] = useState<string | null>(null);
-
-  const isProtectedRoute = PROTECTED_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-  const isLoginPage = pathname === "/login" || pathname.startsWith("/login/");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (isLoading) return;
+    setMounted(true);
+  }, []);
+
+  const isProtectedRoute = Boolean(
+    pathname && PROTECTED_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
+  );
+  const isLoginPage = Boolean(pathname && (pathname === "/login" || pathname.startsWith("/login/")));
+
+  useEffect(() => {
+    if (!mounted || isLoading) return;
 
     if (!isAuthenticated) {
       if (isProtectedRoute) {
@@ -76,7 +83,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
     } else {
       setDeniedRoleMessage(null);
     }
-  }, [isLoading, isAuthenticated, isHost, isAdmin, pathname, searchParams, router, isProtectedRoute, isLoginPage]);
+  }, [isLoading, isAuthenticated, isHost, isAdmin, pathname, searchParams, router, isProtectedRoute, isLoginPage, mounted]);
+
+  // Guard SSR and initial hydration pass so server and client HTML match 100%
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   // Loading state while checking token - only block rendering for strictly protected routes
   if (isLoading && isProtectedRoute) {
