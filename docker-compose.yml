@@ -1,0 +1,67 @@
+# ╔═══════════════════════════════════════════════════════════════════════╗
+# ║  AgroSafe Travel — Docker Compose                                    ║
+# ║                                                                       ║
+# ║  Usage:                                                               ║
+# ║    docker compose up --build          # first time / rebuild          ║
+# ║    docker compose up -d               # detached (background)         ║
+# ║    docker compose down                # stop all                      ║
+# ║    docker compose logs -f backend     # tail backend logs             ║
+# ║    docker compose logs -f frontend    # tail frontend logs            ║
+# ╚═══════════════════════════════════════════════════════════════════════╝
+
+services:
+  # ── Backend API Server (Express + TypeScript) ──────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agrosafe-backend
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-5000}:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
+    networks:
+      - agrosafe-net
+
+  # ── Frontend (Next.js 15 Standalone) ───────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Client-side requests in browser need host-accessible URL (localhost:5000)
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
+        NEXT_PUBLIC_RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-rzp_test_xxxxxxxxxxxxxx}
+    container_name: agrosafe-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+    networks:
+      - agrosafe-net
+
+networks:
+  agrosafe-net:
+    driver: bridge
