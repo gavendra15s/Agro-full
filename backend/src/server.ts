@@ -43,7 +43,14 @@ const app = express();
 
 app.use(cors()); // Allow all origins by default
 
-app.use(express.json({ limit: "15mb" }));
+app.use(
+  express.json({
+    limit: "15mb",
+    verify: (req: any, _res, buf) => {
+      req.rawBody = buf;
+    },
+  })
+);
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
 // Request Logger
@@ -100,7 +107,13 @@ if (!process.env.VERCEL && process.env.NODE_ENV !== "test") {
     console.log(`Supabase DB Integration: ${isLiveSupabaseConfigured() ? "Connected" : "NOT CONFIGURED — check .env"}`);
     console.log(`Base API URL: http://localhost:${ENV.PORT}/api`);
     console.log(`====================================================`);
+
+    // Start background ingestion, hold-release, and risk precomputation scheduler
+    import("./services/backgroundJobs.js").then((m) => {
+      m.backgroundScheduler.start();
+    }).catch((e) => console.warn("[Server] Could not initialize background scheduler:", e.message));
   });
 }
+
 
 export default app;

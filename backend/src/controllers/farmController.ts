@@ -57,3 +57,12 @@ export const updateCapacity = async (req: AuthenticatedRequest, res: Response): 
   const updated = await updateFarmCapacity(hostId, slug, Number(req.body.max_guests));
   res.status(200).json({ success: true, data: updated });
 };
+
+export const getFarmRisk = async (req: Request, res: Response): Promise<void> => {
+  const slug = Array.isArray(req.params.slug) ? req.params.slug[0] : req.params.slug;
+  const date = req.query.date as string;
+  const { getFarmDetailedRisk } = await import("../services/safetyService.js");
+  const risk = await getFarmDetailedRisk(slug, date);
+  res.status(200).json({ success: true, data: risk });
+};
+
