@@ -33,13 +33,14 @@ export const ENV = {
   JWT_SECRET: process.env.JWT_SECRET || "super-secret-jwt-key-agrosafe-2026",
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
 
-  // Email / SMTP Configuration
+  // Email / SMTP & Resend Configuration
+  RESEND_API_KEY: process.env.RESEND_API_KEY || "",
   SMTP_HOST: process.env.SMTP_HOST || "smtp.gmail.com",
   SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465,
   SMTP_SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : true,
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
-  EMAIL_FROM: process.env.EMAIL_FROM || process.env.SMTP_USER || "AgroSafe Travel <noreply@agrosafe.travel>",
+  EMAIL_FROM: process.env.EMAIL_FROM || "AgroSafe Travel <onboarding@resend.dev>",
   APP_URL: process.env.APP_URL || process.env.CLIENT_URL || "http://localhost:3000",
 
   // Admin notification recipient (payment alerts)

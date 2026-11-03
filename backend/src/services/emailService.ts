@@ -4,11 +4,23 @@ import { ENV } from "../config/env.js";
 // Initialize Transporter
 let transporter: Transporter | null = null;
 
+function isPlaceholder(val?: string): boolean {
+  if (!val) return true;
+  const lower = val.toLowerCase().trim();
+  return (
+    lower.includes("your_email") ||
+    lower.includes("example.com") ||
+    lower === "abcdefghijklmnop" ||
+    lower === "placeholder" ||
+    lower === "test"
+  );
+}
+
 function getTransporter(): Transporter | null {
   if (transporter) return transporter;
 
-  if (!ENV.SMTP_USER || !ENV.SMTP_PASS) {
-    console.warn("[Email] SMTP credentials not set in .env (SMTP_USER / SMTP_PASS). Emails will be logged to console.");
+  if (!ENV.SMTP_USER || !ENV.SMTP_PASS || isPlaceholder(ENV.SMTP_USER) || isPlaceholder(ENV.SMTP_PASS)) {
+    console.warn("[Email] Valid SMTP credentials not set in .env. Operating in SIMULATED email dispatch mode (links logged to console).");
     return null;
   }
 
@@ -63,41 +75,94 @@ function emailShell(title: string, bodyHtml: string): string {
     `;
 }
 
+async function sendViaResend(mailOptions: {
+  from?: string;
+  to: string;
+  subject: string;
+  text: string;
+  html: string;
+}): Promise<{ success: boolean; messageId: string }> {
+  const fromAddress = mailOptions.from || ENV.EMAIL_FROM || "AgroSafe Travel <onboarding@resend.dev>";
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${ENV.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: fromAddress,
+      to: [mailOptions.to],
+      subject: mailOptions.subject,
+      html: mailOptions.html,
+      text: mailOptions.text,
+    }),
+  });
+
+  const data: any = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const errorMsg = data?.message || `HTTP ${response.status}: Failed to send email via Resend`;
+    console.error(`[Resend Error] Failed to send to ${mailOptions.to}:`, errorMsg);
+    throw new Error(errorMsg);
+  }
+
+  console.log(`[Resend Sent] "${mailOptions.subject}" sent to ${mailOptions.to} (ID: ${data.id})`);
+  return { success: true, messageId: data.id };
+}
+
 async function dispatchEmail(mailOptions: {
   to: string;
   subject: string;
   text: string;
   html: string;
 }): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
-  const full = { from: ENV.EMAIL_FROM, ...mailOptions };
+  // 1. Resend REST API (Recommended standard for Vercel / Serverless)
+  if (ENV.RESEND_API_KEY && !ENV.RESEND_API_KEY.includes("placeholder")) {
+    try {
+      return await sendViaResend(mailOptions);
+    } catch (err: any) {
+      console.error("[Email] Resend delivery failed:", err.message);
+      throw err;
+    }
+  }
+
+  // 2. Standard SMTP Transport
   const client = getTransporter();
-
-  if (!client) {
-    console.log("==================================================");
-    console.log("[SIMULATED EMAIL DISPATCH]");
-    console.log(`To: ${full.to}`);
-    console.log(`Subject: ${full.subject}`);
-    console.log(full.text);
-    console.log("==================================================");
-    return { success: true, simulated: true };
+  if (client) {
+    try {
+      const full = { from: ENV.EMAIL_FROM, ...mailOptions };
+      const info = await client.sendMail(full);
+      console.log(`[Email Sent] "${full.subject}" sent to ${full.to} (Message ID: ${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (err: any) {
+      console.error(`[Email Error] Failed to send "${mailOptions.subject}" to ${mailOptions.to}:`, err.message);
+      throw new Error(`Email delivery failed: ${err.message}`);
+    }
   }
 
-  try {
-    const info = await client.sendMail(full);
-    console.log(`[Email Sent] "${full.subject}" sent to ${full.to} (Message ID: ${info.messageId})`);
-    return { success: true, messageId: info.messageId };
-  } catch (err: any) {
-    console.error(`[Email Error] Failed to send "${full.subject}" to ${full.to}:`, err.message);
-    throw new Error(`Email delivery failed: ${err.message}`);
-  }
+  // 3. Local Development Simulation Fallback
+  const full = { from: ENV.EMAIL_FROM, ...mailOptions };
+  console.log("\n==================================================");
+  console.log("📨 [DEV MODE - SIMULATED EMAIL DISPATCH]");
+  console.log(`To: ${full.to}`);
+  console.log(`Subject: ${full.subject}`);
+  console.log("--------------------------------------------------");
+  console.log(full.text);
+  console.log("==================================================\n");
+  return { success: true, simulated: true };
 }
 
 export async function sendVerificationEmail(
   email: string,
   firstName: string,
   token: string
-): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
-  const verifyUrl = `${ENV.APP_URL}/login?verify_token=${encodeURIComponent(token)}`;
+): Promise<{ success: boolean; messageId?: string; simulated?: boolean; verificationUrl?: string }> {
+  const baseUrl =
+    ENV.APP_URL && !ENV.APP_URL.includes("vercel.app")
+      ? ENV.APP_URL
+      : (ENV.CLIENT_URL || "http://localhost:3000");
+
+  const verifyUrl = `${baseUrl}/login?verify_token=${encodeURIComponent(token)}`;
 
   const text = `Hello ${firstName},\n\nPlease verify your email for AgroSafe Travel by clicking this link:\n${verifyUrl}\n\nThis link will expire in 24 hours.\n\nSafe travels,\nAgroSafe Team`;
 
@@ -115,12 +180,14 @@ export async function sendVerificationEmail(
     `
   );
 
-  return dispatchEmail({
+  const res = await dispatchEmail({
     to: email,
     subject: "Verify your email — AgroSafe Travel",
     text,
     html,
   });
+
+  return { ...res, verificationUrl: verifyUrl };
 }
 
 export async function sendHostBookingEmail(

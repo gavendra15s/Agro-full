@@ -134,11 +134,16 @@ export const resendUserVerification = async (email: string) => {
   }
 
   const verifyToken = createVerificationToken(user.id, user.email);
-  await sendVerificationEmail(user.email, user.first_name, verifyToken);
+  const emailRes = await sendVerificationEmail(user.email, user.first_name, verifyToken);
 
   return {
     success: true,
-    message: "Verification email re-sent. Please check your inbox and spam folder.",
+    simulated: emailRes.simulated,
+    verificationToken: verifyToken,
+    verificationUrl: emailRes.verificationUrl,
+    message: emailRes.simulated
+      ? "Dev Mode: Verification link generated and logged to the backend console."
+      : "Verification email re-sent. Please check your inbox and spam folder.",
   };
 };
 
