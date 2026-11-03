@@ -22,11 +22,21 @@ import {
   WARNINGS as FALLBACK_WARNINGS,
 } from "@/lib/data/farms";
 
-const API_BASE_URL =
+const rawBaseUrl =
   process.env.NEXT_PUBLIC_API_URL ||
   (typeof window !== "undefined"
     ? "http://localhost:5000/api"
     : "http://127.0.0.1:5000/api");
+
+function normalizeApiBaseUrl(raw: string): string {
+  let cleaned = raw.trim().replace(/\/+$/, "");
+  if (!cleaned.endsWith("/api")) {
+    cleaned += "/api";
+  }
+  return cleaned;
+}
+
+const API_BASE_URL = normalizeApiBaseUrl(rawBaseUrl);
 
 function getToken(): string | null {
   if (typeof window === "undefined") return null;
