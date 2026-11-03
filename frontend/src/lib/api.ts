@@ -595,12 +595,12 @@ export const api = {
 
     async submitDecision(
       id: number | string,
-      decision: "Confirm" | "Reject",
+      decision: "Confirm" | "Reject" | "confirm" | "reject",
       reason?: string
     ): Promise<{ success: boolean; data?: any; error?: string }> {
       return await request<any>(`/reports/${id}/decision`, {
         method: "POST",
-        body: JSON.stringify({ decision, reason }),
+        body: JSON.stringify({ decision: decision.toLowerCase(), reason }),
       });
     },
   },

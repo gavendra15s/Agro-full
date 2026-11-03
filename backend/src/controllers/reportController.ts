@@ -82,9 +82,10 @@ export const submitDecision = async (req: AuthenticatedRequest, res: Response): 
   const moderatorId = req.user?.id || 1;
   const { id } = req.params;
   const param = Array.isArray(id) ? id[0] : id;
-  const { decision, reason } = req.body;
+  const { reason } = req.body;
+  const normalizedDecision = String(req.body?.decision || "").toLowerCase().trim();
 
-  if (!decision || !["confirm", "reject", "request_info"].includes(decision)) {
+  if (!normalizedDecision || !["confirm", "reject", "request_info"].includes(normalizedDecision)) {
     res.status(400).json({ success: false, error: "decision must be one of: confirm, reject, request_info" });
     return;
   }
@@ -92,13 +93,13 @@ export const submitDecision = async (req: AuthenticatedRequest, res: Response): 
   const result = await photoVerificationService.submitModeratorDecision(
     Number(param),
     moderatorId,
-    decision,
+    normalizedDecision as "confirm" | "reject" | "request_info",
     reason || "Moderation review completed."
   );
 
   res.status(200).json({
     success: true,
-    message: `Moderation decision '${decision}' executed successfully.`,
+    message: `Moderation decision '${normalizedDecision}' executed successfully.`,
     data: result,
   });
 };
