@@ -27,7 +27,7 @@ export function AuthHeader() {
           className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700 shrink-0"
         >
           <span className="size-2.5 rounded-full bg-brand-600 inline-block" />
-          AgroSafe Travel
+          KHETYATRA
         </Link>
 
         {/* Center Desktop Navigation */}
@@ -39,7 +39,7 @@ export function AuthHeader() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "text-xs lg:text-sm font-medium transition-colors hover:text-brand-700",
+                  "text-xs lg:text-sm foant-medium transition-colors hover:text-brand-700",
                   isActive ? "font-bold text-brand-700" : "text-ink"
                 )}
               >
