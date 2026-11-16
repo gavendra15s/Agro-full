@@ -261,8 +261,8 @@ export function normalizeWarning(raw: any): Warning {
     severity: raw.severity || "High",
     title: raw.title || "Hazard Alert",
     description: raw.description || "Active slope debris advisory.",
-    affectedFarmsCount: Number(raw.affectedFarmsCount || (raw.impact_radius_km > 10 ? 2 : 1)),
-    affectedBookingsCount: Number(raw.affectedBookingsCount || (raw.impact_radius_km > 10 ? 3 : 1)),
+    affectedFarmsCount: Number(raw.affected_farms_count ?? raw.affectedFarmsCount ?? 0),
+    affectedBookingsCount: Number(raw.affected_bookings_count ?? raw.affectedBookingsCount ?? 0),
     imageUrl: getHazardImage(raw),
   };
 }
@@ -834,14 +834,14 @@ export const api = {
         return res.data;
       }
       return {
-        totalUsers: 14,
-        guestsCount: 10,
-        hostsCount: 3,
-        adminsCount: 1,
-        totalFarms: 24,
-        activeWarnings: 2,
-        totalBookings: 15,
-        monitoredDistricts: 8,
+        totalUsers: 0,
+        guestsCount: 0,
+        hostsCount: 0,
+        adminsCount: 0,
+        totalFarms: 0,
+        activeWarnings: 0,
+        totalBookings: 0,
+        monitoredDistricts: 0,
       };
     },
   },

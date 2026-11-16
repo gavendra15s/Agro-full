@@ -34,13 +34,14 @@ export const ENV = {
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || "7d",
 
   // Email / SMTP & Resend Configuration
+  EMAIL_PROVIDER: process.env.EMAIL_PROVIDER || "",
   RESEND_API_KEY: process.env.RESEND_API_KEY || "",
-  SMTP_HOST: process.env.SMTP_HOST || "smtp.gmail.com",
-  SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 465,
-  SMTP_SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : true,
+  SMTP_HOST: process.env.SMTP_HOST || "smtp-relay.brevo.com",
+  SMTP_PORT: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587,
+  SMTP_SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : false,
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
-  EMAIL_FROM: process.env.EMAIL_FROM || "AgroSafe Travel <onboarding@resend.dev>",
+  EMAIL_FROM: process.env.EMAIL_FROM || "AgroSafe Travel <autry.shashi@gmail.com>",
   APP_URL: process.env.APP_URL || process.env.CLIENT_URL || "http://localhost:3000",
 
   // Admin notification recipient (payment alerts)

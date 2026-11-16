@@ -6,18 +6,7 @@ import { api } from "@/lib/api";
 import { PlatformStats } from "@/lib/types";
 
 export function PlatformStatsCounter({ initialStats }: { initialStats?: PlatformStats }) {
-  const [stats, setStats] = useState<PlatformStats>(
-    initialStats || {
-      totalUsers: 14,
-      guestsCount: 10,
-      hostsCount: 3,
-      adminsCount: 1,
-      totalFarms: 24,
-      activeWarnings: 2,
-      totalBookings: 15,
-      monitoredDistricts: 8,
-    }
-  );
+  const [stats, setStats] = useState<PlatformStats | null>(initialStats ?? null);
   const [loading, setLoading] = useState(!initialStats);
 
   useEffect(() => {
@@ -35,8 +24,8 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
       }
     }
     loadStats();
-    // Auto-refresh stats every 45 seconds
-    const interval = setInterval(loadStats, 45000);
+    // Auto-refresh stats every 30 seconds to keep live metrics dynamic
+    const interval = setInterval(loadStats, 30000);
     return () => {
       mounted = false;
       clearInterval(interval);
@@ -78,12 +67,20 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
             <div className="mt-4">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-brand-900 font-mono">
-                  {stats.totalUsers}
+                  {loading && !stats ? (
+                    <span className="inline-block h-8 w-12 rounded bg-brand-100 animate-pulse" />
+                  ) : (
+                    stats?.totalUsers ?? 0
+                  )}
                 </span>
                 <span className="text-xs font-bold text-safe uppercase">Active</span>
               </div>
               <p className="mt-1 text-xs font-medium text-ink-muted">
-                {stats.guestsCount} travelers &bull; {stats.hostsCount} farm hosts
+                {loading && !stats ? (
+                  "Syncing user ledger..."
+                ) : (
+                  `${stats?.guestsCount ?? 0} travelers • ${stats?.hostsCount ?? 0} farm hosts`
+                )}
               </p>
             </div>
           </div>
@@ -101,7 +98,11 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
             <div className="mt-4">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-emerald-950 font-mono">
-                  {stats.totalFarms}
+                  {loading && !stats ? (
+                    <span className="inline-block h-8 w-12 rounded bg-emerald-100 animate-pulse" />
+                  ) : (
+                    stats?.totalFarms ?? 0
+                  )}
                 </span>
                 <span className="text-xs font-bold text-emerald-700 uppercase">Listed</span>
               </div>
@@ -124,7 +125,11 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
             <div className="mt-4">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-amber-950 font-mono">
-                  {stats.hostsCount}
+                  {loading && !stats ? (
+                    <span className="inline-block h-8 w-12 rounded bg-amber-100 animate-pulse" />
+                  ) : (
+                    stats?.hostsCount ?? 0
+                  )}
                 </span>
                 <span className="text-xs font-bold text-amber-700 uppercase">Verified</span>
               </div>
@@ -147,7 +152,11 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
             <div className="mt-4">
               <div className="flex items-baseline gap-1.5">
                 <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-blue-950 font-mono">
-                  {stats.monitoredDistricts}
+                  {loading && !stats ? (
+                    <span className="inline-block h-8 w-12 rounded bg-blue-100 animate-pulse" />
+                  ) : (
+                    stats?.monitoredDistricts ?? 0
+                  )}
                 </span>
                 <span className="text-xs font-bold text-blue-700 uppercase">Districts</span>
               </div>
@@ -161,3 +170,4 @@ export function PlatformStatsCounter({ initialStats }: { initialStats?: Platform
     </section>
   );
 }
+

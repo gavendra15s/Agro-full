@@ -116,17 +116,57 @@ async function dispatchEmail(mailOptions: {
   text: string;
   html: string;
 }): Promise<{ success: boolean; messageId?: string; simulated?: boolean }> {
-  // 1. Resend REST API (Recommended standard for Vercel / Serverless)
-  if (ENV.RESEND_API_KEY && !ENV.RESEND_API_KEY.includes("placeholder")) {
+  const provider = (ENV.EMAIL_PROVIDER || "").toLowerCase().trim();
+  const hasSmtp = Boolean(ENV.SMTP_USER && ENV.SMTP_PASS && !isPlaceholder(ENV.SMTP_USER));
+  const hasResend = Boolean(ENV.RESEND_API_KEY && !ENV.RESEND_API_KEY.includes("placeholder"));
+
+  // 1. If provider is explicitly set to Brevo / SMTP, or if SMTP is configured without Resend:
+  const preferSmtp = provider === "brevo" || provider === "smtp" || (hasSmtp && provider !== "resend");
+
+  if (preferSmtp && hasSmtp) {
+    const client = getTransporter();
+    if (client) {
+      try {
+        const full = { from: ENV.EMAIL_FROM, ...mailOptions };
+        const info = await client.sendMail(full);
+        console.log(`[Email Sent via SMTP/Brevo] "${full.subject}" sent to ${full.to} (Message ID: ${info.messageId})`);
+        return { success: true, messageId: info.messageId };
+      } catch (err: any) {
+        console.error(`[SMTP/Brevo Error] Delivery failed:`, err.message);
+        if (hasResend) {
+          console.log("[Email] Falling back to Resend API...");
+          return await sendViaResend(mailOptions);
+        }
+        throw new Error(`Email delivery failed: ${err.message}`);
+      }
+    }
+  }
+
+  // 2. Resend REST API
+  if (hasResend) {
     try {
       return await sendViaResend(mailOptions);
     } catch (err: any) {
-      console.error("[Email] Resend delivery failed:", err.message);
+      console.warn(`[Email] Resend delivery failed (${err.message}). Attempting SMTP fallback...`);
+      // If Resend failed (e.g. 403 test domain restriction), fall back to SMTP (Brevo) immediately!
+      if (hasSmtp) {
+        const client = getTransporter();
+        if (client) {
+          try {
+            const full = { from: ENV.EMAIL_FROM, ...mailOptions };
+            const info = await client.sendMail(full);
+            console.log(`[Email Sent via SMTP Fallback] "${full.subject}" sent to ${full.to} (Message ID: ${info.messageId})`);
+            return { success: true, messageId: info.messageId };
+          } catch (smtpErr: any) {
+            console.error(`[Email Error] SMTP Fallback also failed:`, smtpErr.message);
+          }
+        }
+      }
       throw err;
     }
   }
 
-  // 2. Standard SMTP Transport
+  // 3. Standard SMTP Transport
   const client = getTransporter();
   if (client) {
     try {
@@ -140,7 +180,7 @@ async function dispatchEmail(mailOptions: {
     }
   }
 
-  // 3. Local Development Simulation Fallback
+  // 4. Local Development Simulation Fallback
   const full = { from: ENV.EMAIL_FROM, ...mailOptions };
   console.log("\n==================================================");
   console.log("📨 [DEV MODE - SIMULATED EMAIL DISPATCH]");

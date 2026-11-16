@@ -188,51 +188,44 @@ export const loginUser = async (data: { email: string; password: string }) => {
 
 /** Get live platform statistics for public counter & dashboard */
 export const getPlatformStats = async () => {
-  try {
-    const [usersRes, farmsRes, warningsRes, bookingsRes] = await Promise.all([
-      supabase.from("users").select("id, user_type"),
-      supabase.from("farms").select("id, district", { count: "exact" }),
-      supabase.from("warnings").select("id", { count: "exact" }).eq("status", "Active"),
-      supabase.from("bookings").select("id", { count: "exact" }),
-    ]);
+  const [usersRes, farmsRes, warningsRes, bookingsRes] = await Promise.all([
+    supabase.from("users").select("id, user_type"),
+    supabase.from("farms").select("id, district"),
+    supabase.from("warnings").select("id").eq("status", "Active"),
+    supabase.from("bookings").select("id"),
+  ]);
 
-    const users = usersRes.data || [];
-    const totalUsers = users.length;
-    const guestsCount = users.filter((u: any) => u.user_type === "guest").length;
-    const hostsCount = users.filter((u: any) => u.user_type === "host").length;
-    const adminsCount = users.filter((u: any) => u.user_type === "admin").length;
+  const users = usersRes.data || [];
+  const totalUsers = users.length;
+  const guestsCount = users.filter((u: any) => u.user_type === "guest").length;
+  const hostsCount = users.filter((u: any) => u.user_type === "host").length;
+  const adminsCount = users.filter((u: any) => u.user_type === "admin").length;
 
-    const totalFarms = farmsRes.count ?? (farmsRes.data ? farmsRes.data.length : 24);
-    const activeWarnings = warningsRes.count ?? (warningsRes.data ? warningsRes.data.length : 0);
-    const totalBookings = bookingsRes.count ?? (bookingsRes.data ? bookingsRes.data.length : 15);
+  const farms = farmsRes.data || [];
+  const totalFarms = farms.length;
 
-    // Compute unique monitored districts
-    const uniqueDistricts = new Set((farmsRes.data || []).map((f: any) => f.district).filter(Boolean));
-    const monitoredDistricts = Math.max(uniqueDistricts.size, 8);
+  const warnings = warningsRes.data || [];
+  const activeWarnings = warnings.length;
 
-    return {
-      totalUsers,
-      guestsCount,
-      hostsCount,
-      adminsCount,
-      totalFarms,
-      activeWarnings,
-      totalBookings,
-      monitoredDistricts,
-    };
-  } catch (err: any) {
-    console.warn("[getPlatformStats error]:", err);
-    return {
-      totalUsers: 14,
-      guestsCount: 10,
-      hostsCount: 3,
-      adminsCount: 1,
-      totalFarms: 24,
-      activeWarnings: 2,
-      totalBookings: 15,
-      monitoredDistricts: 8,
-    };
-  }
+  const bookings = bookingsRes.data || [];
+  const totalBookings = bookings.length;
+
+  // Real distinct monitored districts from actual farms in database
+  const uniqueDistricts = new Set(
+    farms.map((f: any) => f.district?.trim()).filter(Boolean)
+  );
+  const monitoredDistricts = uniqueDistricts.size;
+
+  return {
+    totalUsers,
+    guestsCount,
+    hostsCount,
+    adminsCount,
+    totalFarms,
+    activeWarnings,
+    totalBookings,
+    monitoredDistricts,
+  };
 };
 
 /** List all registered farm owners (hosts) along with their farm stays */

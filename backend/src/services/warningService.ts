@@ -131,9 +131,53 @@ export const listAllWarnings = async (status?: string) => {
   if (status && status !== "all") {
     query = query.eq("status", status);
   }
-  const { data, error } = await query.order("issued_at", { ascending: false });
+  const { data: warnings, error } = await query.order("issued_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return data;
+  if (!warnings || warnings.length === 0) return [];
+
+  // Dynamically compute real affected farms and real affected bookings
+  const [{ data: allFarms }, { data: allBookings }] = await Promise.all([
+    supabase.from("farms").select("id, latitude, longitude"),
+    supabase.from("bookings").select("id, farm_id, current_status"),
+  ]);
+
+  const farmsList = allFarms || [];
+  const bookingsList = allBookings || [];
+
+  return warnings.map((w: any) => {
+    const lat = Number(w.epicenter_lat);
+    const lng = Number(w.epicenter_lng);
+    const radius = Number(w.impact_radius_km || 10);
+
+    // Compute real distance to every farmstay using Haversine
+    const affectedFarmIds = new Set<number>();
+    farmsList.forEach((farm: any) => {
+      if (farm.latitude && farm.longitude) {
+        const dist = haversineDistanceKm(lat, lng, Number(farm.latitude), Number(farm.longitude));
+        if (dist <= radius) {
+          affectedFarmIds.add(Number(farm.id));
+        }
+      }
+    });
+
+    if (w.farm_id) {
+      affectedFarmIds.add(Number(w.farm_id));
+    }
+
+    // Compute real affected bookings
+    const affectedBookings = bookingsList.filter((b: any) => {
+      if (!affectedFarmIds.has(Number(b.farm_id))) return false;
+      const statusLower = String(b.current_status || "").toLowerCase();
+      if (statusLower === "cancelled" || statusLower === "refunded") return false;
+      return true;
+    });
+
+    return {
+      ...w,
+      affected_farms_count: affectedFarmIds.size,
+      affected_bookings_count: affectedBookings.length,
+    };
+  });
 };
 
 export const revokeWarning = async (warningId: string | number) => {
