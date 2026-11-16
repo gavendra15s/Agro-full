@@ -6,6 +6,7 @@ import {
   AlertOctagon,
   AlertTriangle,
   Bell,
+  Camera,
   CheckCircle2,
   Clock,
   Compass,
@@ -59,8 +60,16 @@ export default function WarningsFeedPage() {
   }, [filterStatus]);
 
   const filteredWarnings = warnings.filter((w) => {
+    const isPhoto = w.warningSource === "Photo_Verified" || (typeof w.id === "string" && w.id.startsWith("WRN-CONF"));
     const matchSeverity = filterSeverity === "all" || w.severity === filterSeverity;
-    const matchSource = filterSource === "all" || w.warningSource === filterSource;
+    const matchSource =
+      filterSource === "all"
+        ? true
+        : filterSource === "Photo_Verified"
+        ? isPhoto
+        : filterSource === "Manual_Host"
+        ? (w.warningSource === "Manual_Host" && !isPhoto)
+        : w.warningSource === filterSource;
     const matchStatus = filterStatus === "all" || w.status === filterStatus;
     return matchSeverity && matchSource && matchStatus;
   });
@@ -138,6 +147,7 @@ export default function WarningsFeedPage() {
             <div className="flex rounded-lg border border-line p-1 bg-canvas">
               {[
                 { id: "all", label: "All Sources" },
+                { id: "Photo_Verified", label: "📷 Photo Verified" },
                 { id: "Automated_CNN", label: "Automated CNN" },
                 { id: "Manual_Host", label: "Host Manual" },
               ].map((src) => (
@@ -257,8 +267,20 @@ export default function WarningsFeedPage() {
               <div className="p-6 flex-1 flex flex-col justify-between gap-4">
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-md bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700 flex items-center gap-1">
-                      {warning.warningSource === "Automated_CNN" ? (
+                    <span
+                      className={cn(
+                        "rounded-md border px-2.5 py-0.5 text-xs font-semibold flex items-center gap-1.5",
+                        warning.warningSource === "Photo_Verified"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                          : "bg-slate-100 border-slate-200 text-slate-700"
+                      )}
+                    >
+                      {warning.warningSource === "Photo_Verified" ? (
+                        <>
+                          <Camera size={12} className="text-emerald-600" />
+                          <span>Path B Photo Verified</span>
+                        </>
+                      ) : warning.warningSource === "Automated_CNN" ? (
                         <>
                           <Cpu size={12} className="text-indigo-600" /> Automated Verification
                         </>

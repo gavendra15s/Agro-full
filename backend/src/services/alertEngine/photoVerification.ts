@@ -261,18 +261,28 @@ export class PhotoVerificationService {
     // 3. If confirmed, generate broadcast warning in warnings DB
     let broadcastWarning = null;
     if (decision === "confirm") {
-      // Prevent duplicate warnings if admin clicks Confirm multiple times
+      const hazardNames: Record<string, string> = {
+        landslide: "Landslide & Slope Movement",
+        rockfall: "Rockfall Hazard",
+        weather_hazard: "Severe Storm / Wind Hazard",
+        road_blockage: "Road Blockage Obstruction",
+        flood: "Flash Flood Warning",
+      };
+      const typeKey = String(updatedReport.claimed_type || "").toLowerCase().trim();
+      const hazardLabel = hazardNames[typeKey] || "Environmental Hazard";
+      const cleanTitle = `Verified ${hazardLabel}: ${updatedReport.location_name || "Transit Corridor"}`;
+
+      // Prevent duplicate warnings if admin clicks Confirm multiple times for THIS specific report
       const { data: existingWarning } = await supabase
         .from("warnings")
         .select("*")
-        .eq("epicenter_lat", updatedReport.device_lat)
-        .eq("epicenter_lng", updatedReport.device_lng)
+        .eq("title", cleanTitle)
         .eq("status", "Active")
         .limit(1)
         .maybeSingle();
 
       if (existingWarning) {
-        console.log(`[PhotoModeration] Warning already active for this incident (${existingWarning.warning_code}), skipping duplicate.`);
+        console.log(`[PhotoModeration] Warning already active for this report (${existingWarning.warning_code}), skipping duplicate.`);
         return { report: updatedReport, decision, broadcastWarning: existingWarning };
       }
 
@@ -308,21 +318,10 @@ export class PhotoVerificationService {
         }
       }
 
-      const hazardNames: Record<string, string> = {
-        landslide: "Landslide & Slope Movement",
-        rockfall: "Rockfall Hazard",
-        weather_hazard: "Severe Storm / Wind Hazard",
-        road_blockage: "Road Blockage Obstruction",
-        flood: "Flash Flood Warning",
-      };
-      const typeKey = String(updatedReport.claimed_type || "").toLowerCase().trim();
-      const hazardLabel = hazardNames[typeKey] || "Environmental Hazard";
-      const cleanTitle = `Verified ${hazardLabel}: ${updatedReport.location_name || "Transit Corridor"}`;
-
       const warningCode = `WRN-CONF-${Math.floor(Math.random() * 9000 + 1000)}`;
       const { data: warning } = await safeInsert<any>("warnings", {
         warning_code: warningCode,
-        warning_source: "Photo_Verified",
+        warning_source: "Manual_Host",
         report_id: linkedReportId,
         farm_id: updatedReport.farm_id,
         host_id: moderatorId,
