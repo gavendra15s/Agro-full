@@ -73,6 +73,8 @@ async function request<T>(
     headers,
     ...(isMutation
       ? { cache: "no-store" }
+      : typeof window !== "undefined"
+      ? { cache: "no-cache" }
       : {
           next: { revalidate: 30 },
           ...(options.cache ? { cache: options.cache } : {}),

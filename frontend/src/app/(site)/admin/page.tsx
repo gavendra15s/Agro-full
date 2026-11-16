@@ -1371,6 +1371,19 @@ export default function AdminDashboardPage() {
 
             <div className="flex items-center gap-3">
               <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setRefreshing(true);
+                  loadAdminData();
+                }}
+                disabled={refreshing}
+                className="gap-2 text-xs"
+              >
+                <RefreshCw size={14} className={cn(refreshing && "animate-spin")} />
+                Refresh Alerts
+              </Button>
+              <Button
                 variant="primary"
                 size="sm"
                 onClick={() => setShowAlertModal(true)}
