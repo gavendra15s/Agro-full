@@ -135,20 +135,33 @@ export default function LivePage() {
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
             {warnings.map((w) => (
-              <Card key={w.id} className="p-5 border-l-4 border-l-danger bg-red-50/40">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <span className="inline-block rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold uppercase text-red-800">
+              <Card key={w.id} className="overflow-hidden border-l-4 border-l-danger bg-red-50/40">
+                <div className="relative h-40 w-full overflow-hidden bg-slate-900">
+                  <img
+                    src={w.imageUrl || `https://picsum.photos/seed/${w.id}/800/600`}
+                    alt={w.title}
+                    className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                  <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
+                    <span className="rounded-md bg-red-600/90 text-white px-2 py-0.5 text-[10px] font-bold uppercase backdrop-blur-xs">
                       {w.warningSource.replace(/_/g, " ")}
                     </span>
-                    <h4 className="mt-1.5 font-bold text-ink">{w.title}</h4>
+                    <span className="rounded-md bg-black/60 text-white/90 px-1.5 py-0.5 text-[10px] font-mono">
+                      {w.id}
+                    </span>
                   </div>
-                  <span className="text-xs font-mono text-ink-subtle">{w.id}</span>
+                  <div className="absolute bottom-2 left-3 right-3 text-white">
+                    <h4 className="font-bold text-sm text-white drop-shadow-sm truncate">{w.title}</h4>
+                  </div>
                 </div>
-                <p className="mt-2 text-xs text-ink-muted leading-relaxed">{w.description}</p>
-                <div className="mt-4 flex items-center justify-between border-t border-red-200/60 pt-2.5 text-xs text-ink-subtle">
-                  <span>Epicenter: {w.epicenterLat}° N, {w.epicenterLng}° E</span>
-                  <span className="font-semibold text-danger">{w.impactRadiusKm} km radius</span>
+
+                <div className="p-4">
+                  <p className="text-xs text-ink-muted leading-relaxed line-clamp-2">{w.description}</p>
+                  <div className="mt-3 flex items-center justify-between border-t border-red-200/60 pt-2 text-xs text-ink-subtle">
+                    <span>Epicenter: {w.epicenterLat}° N, {w.epicenterLng}° E</span>
+                    <span className="font-semibold text-danger">{w.impactRadiusKm} km radius</span>
+                  </div>
                 </div>
               </Card>
             ))}

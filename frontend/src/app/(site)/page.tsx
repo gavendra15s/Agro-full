@@ -3,6 +3,7 @@ import { ArrowRight, Lock, MapPin, ShieldCheck } from "lucide-react";
 import { FarmCard } from "@/components/home/farm-card";
 import { HeroSearch } from "@/components/home/hero-search";
 import { HeroCarousel } from "@/components/home/hero-carousel";
+import { PlatformStatsCounter } from "@/components/home/platform-stats";
 import { ButtonLink } from "@/components/ui/button";
 import { api } from "@/lib/api";
 
@@ -19,11 +20,14 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     checkIn: one(params.checkIn),
   };
 
-  const farms = await api.farms.list({
-    state: query.state || undefined,
-    district: query.district || undefined,
-    subdistrict: query.subDistrict || undefined,
-  });
+  const [farms, platformStats] = await Promise.all([
+    api.farms.list({
+      state: query.state || undefined,
+      district: query.district || undefined,
+      subdistrict: query.subDistrict || undefined,
+    }),
+    api.stats.get().catch(() => undefined),
+  ]);
   const filtered = Boolean(query.state || query.district || query.subDistrict);
 
   return (
@@ -44,6 +48,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           </div>
         </div>
       </HeroCarousel>
+
+      {/* Live Platform Users & Network Statistics Counter */}
+      <PlatformStatsCounter initialStats={platformStats} />
 
       {/* About / Introduction */}
       <section id="about" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">

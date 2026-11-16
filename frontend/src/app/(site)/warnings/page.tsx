@@ -19,6 +19,10 @@ import {
   ShieldAlert,
   Sparkles,
   Users,
+  Maximize2,
+  Eye,
+  X,
+  Image as ImageIcon,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -38,6 +42,7 @@ export default function WarningsFeedPage() {
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("Active");
+  const [activePhoto, setActivePhoto] = useState<{ url: string; title: string; severity?: string; code?: string } | null>(null);
 
   useEffect(() => {
     async function loadWarnings() {
@@ -169,7 +174,7 @@ export default function WarningsFeedPage() {
           <Card
             key={warning.id}
             className={cn(
-              "p-6 border-l-4 transition-all hover:shadow-md",
+              "overflow-hidden border-l-4 transition-all hover:shadow-md",
               warning.severity === "Critical"
                 ? "border-l-danger bg-red-50/20"
                 : warning.severity === "High"
@@ -179,81 +184,122 @@ export default function WarningsFeedPage() {
                 : "border-l-safe"
             )}
           >
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="space-y-2 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs font-bold text-ink-subtle">{warning.id}</span>
+            <div className="flex flex-col md:flex-row">
+              {/* Alert Media Picture */}
+              <div className="relative w-full md:w-64 lg:w-72 h-52 md:h-auto min-h-[200px] shrink-0 bg-slate-900 group">
+                <img
+                  src={warning.imageUrl || `https://picsum.photos/seed/${warning.id}/800/600`}
+                  alt={warning.title}
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30 md:bg-gradient-to-r md:from-transparent md:to-black/20" />
+
+                {/* Severity Badge overlay */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                   <span
                     className={cn(
-                      "rounded-md border px-2.5 py-0.5 text-xs font-semibold",
+                      "rounded-md border px-2 py-0.5 text-xs font-bold shadow-sm backdrop-blur-xs",
                       SEVERITY_BADGES[warning.severity]
                     )}
                   >
-                    {warning.severity} Severity
+                    {warning.severity} Hazard
                   </span>
-
-                  <span className="rounded-md bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700 flex items-center gap-1">
-                    {warning.warningSource === "Automated_CNN" ? (
-                      <>
-                        <Cpu size={12} className="text-indigo-600" /> Automated Verification
-                      </>
-                    ) : (
-                      <>
-                        <Users size={12} className="text-emerald-700" /> Host Broadcast
-                      </>
-                    )}
-                  </span>
-
-                  {warning.status === "Active" ? (
-                    <span className="rounded-md bg-red-100 text-danger border border-red-200 px-2 py-0.5 text-[11px] font-bold">
-                      ACTIVE
-                    </span>
-                  ) : (
-                    <span className="rounded-md bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 text-[11px] font-medium">
-                      CLEARED
-                    </span>
-                  )}
-                </div>
-
-                <h2 className="text-xl font-bold tracking-tight text-ink">{warning.title}</h2>
-
-                <p className="text-sm text-ink-muted leading-relaxed">{warning.description}</p>
-
-                <div className="flex flex-wrap items-center gap-4 text-xs text-ink-subtle pt-2">
-                  <span className="flex items-center gap-1 font-mono">
-                    <MapPin size={14} className="text-danger" /> Epicenter: {warning.epicenterLat}° N, {warning.epicenterLng}° E
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Compass size={14} /> Blast Radius: <strong>{warning.impactRadiusKm} km</strong>
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <Clock size={14} /> Issued: {warning.issuedAt}
-                  </span>
-                  <span className="flex items-center gap-1 text-ink-muted">
-                    Expires: {warning.expiresAt}
+                  <span className="rounded-md bg-black/60 backdrop-blur-xs px-2 py-0.5 text-[10px] font-mono text-white/90">
+                    {warning.id}
                   </span>
                 </div>
+
+                {/* Enlarge Button */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActivePhoto({
+                      url: warning.imageUrl || `https://picsum.photos/seed/${warning.id}/800/600`,
+                      title: warning.title,
+                      severity: warning.severity,
+                      code: warning.id,
+                    })
+                  }
+                  className="absolute bottom-3 right-3 flex items-center gap-1 rounded-md bg-black/70 px-2.5 py-1 text-xs font-medium text-white shadow-sm backdrop-blur-xs hover:bg-black/90 transition-colors cursor-pointer"
+                >
+                  <Maximize2 size={13} />
+                  <span>Inspect Photo</span>
+                </button>
               </div>
 
-              {/* Impact Box */}
-              <div className="flex lg:flex-col items-center lg:items-end justify-between gap-3 border-t lg:border-t-0 lg:border-l border-line pt-4 lg:pt-0 lg:pl-6 shrink-0">
-                <div className="text-left lg:text-right">
-                  <p className="text-xs text-ink-subtle uppercase font-semibold">Impacted Zone</p>
-                  <p className="text-sm font-extrabold text-ink">
-                    {warning.affectedFarmsCount} Farmstays • {warning.affectedBookingsCount} Bookings
-                  </p>
-                  <p className="text-[11px] text-safe font-medium">100% Escrow Refund Protected</p>
+              {/* Alert Text & Actions Content */}
+              <div className="p-6 flex-1 flex flex-col justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-md bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-xs font-medium text-slate-700 flex items-center gap-1">
+                      {warning.warningSource === "Automated_CNN" ? (
+                        <>
+                          <Cpu size={12} className="text-indigo-600" /> Automated Verification
+                        </>
+                      ) : (
+                        <>
+                          <Users size={12} className="text-emerald-700" /> Host Broadcast
+                        </>
+                      )}
+                    </span>
+
+                    {warning.status === "Active" ? (
+                      <span className="rounded-md bg-red-100 text-danger border border-red-200 px-2 py-0.5 text-[11px] font-bold animate-pulse">
+                        LIVE ALERT
+                      </span>
+                    ) : (
+                      <span className="rounded-md bg-gray-100 text-gray-600 border border-gray-200 px-2 py-0.5 text-[11px] font-medium">
+                        CLEARED / EXPIRED
+                      </span>
+                    )}
+
+                    {warning.farmName && (
+                      <span className="rounded-md bg-brand-50 border border-brand-200 px-2.5 py-0.5 text-xs font-medium text-brand-800">
+                        {warning.farmName}
+                      </span>
+                    )}
+                  </div>
+
+                  <h2 className="text-xl font-bold tracking-tight text-ink">{warning.title}</h2>
+                  <p className="text-sm text-ink-muted leading-relaxed">{warning.description}</p>
+
+                  <div className="flex flex-wrap items-center gap-4 text-xs text-ink-subtle pt-2">
+                    <span className="flex items-center gap-1 font-mono">
+                      <MapPin size={14} className="text-danger" /> Epicenter: {warning.epicenterLat}° N, {warning.epicenterLng}° E
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Compass size={14} /> Blast Radius: <strong>{warning.impactRadiusKm} km</strong>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Clock size={14} /> Issued: {warning.issuedAt}
+                    </span>
+                    <span className="flex items-center gap-1 text-ink-muted">
+                      Expires: {warning.expiresAt}
+                    </span>
+                  </div>
                 </div>
 
-                <div className="flex gap-2">
-                  {warning.farmSlug && (
-                    <ButtonLink href={`/farms/${warning.farmSlug}`} variant="outline" size="sm">
-                      View Farm
+                {/* Bottom Impact & Action Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-t border-line/60 pt-4">
+                  <div>
+                    <span className="text-xs text-ink-subtle font-medium">
+                      Impacted Corridor: <strong className="text-ink">{warning.affectedFarmsCount} Farmstays</strong> &bull;{" "}
+                      <strong className="text-ink">{warning.affectedBookingsCount} Bookings</strong>
+                    </span>
+                    <p className="text-[11px] text-safe font-semibold">100% Escrow Refund Protected</p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {warning.farmSlug && (
+                      <ButtonLink href={`/farms/${warning.farmSlug}`} variant="outline" size="sm">
+                        View Farm
+                      </ButtonLink>
+                    )}
+                    <ButtonLink href="/escrow" variant="primary" size="sm">
+                      Escrow Status
                     </ButtonLink>
-                  )}
-                  <ButtonLink href="/escrow" variant="primary" size="sm">
-                    Escrow Status
-                  </ButtonLink>
+                  </div>
                 </div>
               </div>
             </div>
@@ -268,6 +314,48 @@ export default function WarningsFeedPage() {
           </Card>
         )}
       </div>
+
+      {/* Lightbox / Modal for Alert Photo Inspection */}
+      {activePhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onClick={() => setActivePhoto(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full rounded-2xl bg-surface border border-line overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-line px-5 py-4 bg-canvas">
+              <div>
+                <span className="text-xs font-mono font-bold text-danger uppercase">
+                  {activePhoto.code || "HAZARD OBSERVATION"}
+                </span>
+                <h3 className="text-base font-bold text-ink">{activePhoto.title}</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActivePhoto(null)}
+                className="rounded-lg p-1.5 text-ink-subtle hover:bg-black/5 hover:text-ink transition-colors cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="relative max-h-[70vh] bg-black flex items-center justify-center overflow-hidden">
+              <img
+                src={activePhoto.url}
+                alt={activePhoto.title}
+                className="max-h-[70vh] w-auto max-w-full object-contain"
+              />
+            </div>
+            <div className="p-4 bg-surface flex items-center justify-between text-xs text-ink-muted">
+              <span>High-resolution hazard telemetry photograph</span>
+              <Button size="sm" variant="outline" onClick={() => setActivePhoto(null)}>
+                Close Preview
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DFD / CFD Educational Guide */}
       <div className="mt-16 rounded-xl border border-line bg-surface p-8">

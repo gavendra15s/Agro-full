@@ -6,13 +6,19 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building,
+  Camera,
   CheckCircle2,
   DollarSign,
   FileCheck,
   Locate,
   MapPin,
+  Plus,
   Shield,
   Sparkles,
+  Star,
+  Trash2,
+  Upload,
+  X,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button, ButtonLink } from "@/components/ui/button";
@@ -72,6 +78,140 @@ export default function NewFarmPage() {
   const [usesFallback, setUsesFallback] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+
+  // Farmstay Image Gallery State
+  const [images, setImages] = useState<string[]>([]);
+  const [urlInput, setUrlInput] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const CATEGORY_SAMPLE_IMAGES: Record<string, string[]> = {
+    "Organic Farm": [
+      "https://images.unsplash.com/photo-1500651230702-0e2d8a49d4ad?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1592417817098-8f3d6ef23992?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Himalayan Orchard": [
+      "https://images.unsplash.com/photo-1513836279014-a89f7a76ae86?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Spice Garden": [
+      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Tea & Cardamom": [
+      "https://images.unsplash.com/photo-1531971559421-2393a9394627?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Permaculture Retreat": [
+      "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1470240731273-7821a6eeb6bd?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Floral Fields": [
+      "https://images.unsplash.com/photo-1490750967868-88aa4486c946?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?auto=format&fit=crop&w=1000&q=80",
+    ],
+    "Paddy Fields": [
+      "https://images.unsplash.com/photo-1530595467537-0b5996c41f2d?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80",
+    ],
+  };
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const validFiles = Array.from(files).filter((file) =>
+      /^image\/(jpeg|png|webp|jpg)$/i.test(file.type)
+    );
+    if (validFiles.length === 0) {
+      toast.error("Only JPG, PNG, and WebP images are supported.", "Invalid Format");
+      return;
+    }
+
+    setUploadingImage(true);
+    let count = 0;
+    validFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        if (!dataUrl) {
+          count++;
+          if (count === validFiles.length) setUploadingImage(false);
+          return;
+        }
+
+        const img = new window.Image();
+        img.onload = () => {
+          const MAX_DIM = 1200;
+          let width = img.width;
+          let height = img.height;
+          if (width > MAX_DIM || height > MAX_DIM) {
+            if (width > height) {
+              height = Math.round((height * MAX_DIM) / width);
+              width = MAX_DIM;
+            } else {
+              width = Math.round((width * MAX_DIM) / height);
+              height = MAX_DIM;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const optimized = canvas.toDataURL("image/jpeg", 0.84);
+            setImages((prev) => [...prev, optimized]);
+          } else {
+            setImages((prev) => [...prev, dataUrl]);
+          }
+          count++;
+          if (count === validFiles.length) {
+            setUploadingImage(false);
+            toast.success(`${validFiles.length} photo(s) added to gallery.`, "Images Uploaded");
+          }
+        };
+        img.onerror = () => {
+          setImages((prev) => [...prev, dataUrl]);
+          count++;
+          if (count === validFiles.length) setUploadingImage(false);
+        };
+        img.src = dataUrl;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleAddUrl = () => {
+    if (!urlInput.trim()) return;
+    if (
+      !urlInput.startsWith("http://") &&
+      !urlInput.startsWith("https://") &&
+      !urlInput.startsWith("data:image")
+    ) {
+      toast.error("Please enter a valid HTTP or HTTPS image URL.", "Invalid URL");
+      return;
+    }
+    setImages((prev) => [...prev, urlInput.trim()]);
+    setUrlInput("");
+    toast.success("Image URL added to gallery.", "Photo Added");
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSetCover = (index: number) => {
+    setImages((prev) => {
+      const target = prev[index];
+      const remaining = prev.filter((_, i) => i !== index);
+      return [target, ...remaining];
+    });
+    toast.info("Primary cover photo updated.", "Cover Set");
+  };
+
+  const handleAddPresetPhotos = () => {
+    const presets = CATEGORY_SAMPLE_IMAGES[category] || CATEGORY_SAMPLE_IMAGES["Organic Farm"];
+    setImages((prev) => [...prev, ...presets]);
+    toast.success(`Loaded curated ${category} photos.`, "Photos Loaded");
+  };
 
   // Auto-sync fallback coordinates from Static Geo JSON
   useEffect(() => {
@@ -137,6 +277,7 @@ export default function NewFarmPage() {
         max_guests: Number(maxGuests),
         latitude: lat ? Number(lat) : undefined,
         longitude: lng ? Number(lng) : undefined,
+        images: images.length > 0 ? images : undefined,
         amenities: selectedAmenities,
         emergency_contact: emergencyContact,
       });
@@ -282,6 +423,138 @@ export default function NewFarmPage() {
                 )}
               </Field>
               {errors.summary && <p className="text-xs text-danger">{errors.summary}</p>}
+            </Card>
+
+            {/* Farm Photos & Visual Showcase */}
+            <Card className="p-6 space-y-5">
+              <div className="flex items-center justify-between border-b border-line pb-4">
+                <div>
+                  <h2 className="text-base font-bold flex items-center gap-2">
+                    <Camera size={18} className="text-brand-700" /> Farm Photos &amp; Visual Showcase
+                  </h2>
+                  <p className="mt-0.5 text-xs text-ink-muted">
+                    Upload pictures of your farmstay, orchards, fields, living spaces, and surrounding mountains.
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-ink-subtle">
+                  {images.length} {images.length === 1 ? "photo" : "photos"} added
+                </span>
+              </div>
+
+              {/* Upload Dropzone */}
+              <div className="space-y-4">
+                <div
+                  className="relative rounded-xl border-2 border-dashed border-line hover:border-brand-600 bg-canvas/60 p-6 text-center transition-all cursor-pointer group"
+                  onClick={() => document.getElementById("farm_image_file_input")?.click()}
+                >
+                  <input
+                    id="farm_image_file_input"
+                    type="file"
+                    multiple
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    className="hidden"
+                    onChange={(e) => {
+                      handleFiles(e.target.files);
+                      e.target.value = "";
+                    }}
+                  />
+                  <div className="mx-auto flex size-12 items-center justify-center rounded-xl bg-brand-50 text-brand-700 group-hover:scale-105 transition-transform">
+                    <Upload size={22} />
+                  </div>
+                  <p className="mt-3 text-xs font-bold text-ink">
+                    Click to browse or drag and drop farm photos
+                  </p>
+                  <p className="mt-1 text-[11px] text-ink-muted">
+                    Supports JPG, PNG, and WebP. Multi-image selection enabled.
+                  </p>
+                  {uploadingImage && (
+                    <p className="mt-2 text-xs font-semibold text-brand-700 animate-pulse">
+                      Processing &amp; optimizing image assets...
+                    </p>
+                  )}
+                </div>
+
+                {/* Direct Image URL input */}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Or paste direct image URL (https://...)"
+                    value={urlInput}
+                    onChange={(e) => setUrlInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddUrl();
+                      }
+                    }}
+                    className="text-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleAddUrl}
+                    className="shrink-0 text-xs gap-1.5"
+                  >
+                    <Plus size={14} /> Add URL
+                  </Button>
+                </div>
+
+                {/* Quick Preset Buttons */}
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-xs">
+                  <span className="text-ink-subtle text-[11px] font-medium">Quick suggestions:</span>
+                  <button
+                    type="button"
+                    onClick={handleAddPresetPhotos}
+                    className="inline-flex items-center gap-1 text-[11px] font-semibold text-brand-700 hover:text-brand-900 bg-brand-50 border border-brand-200 rounded-md px-2.5 py-1 cursor-pointer transition-colors"
+                  >
+                    <Sparkles size={11} /> Load Curated {category} Photos
+                  </button>
+                </div>
+
+                {/* Thumbnail Preview Grid */}
+                {images.length > 0 && (
+                  <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4 pt-3 border-t border-line/60">
+                    {images.map((imgUrl, idx) => (
+                      <div
+                        key={idx}
+                        className="group relative rounded-lg overflow-hidden border border-line bg-slate-900 aspect-video shadow-xs"
+                      >
+                        <img
+                          src={imgUrl}
+                          alt={`Farm photo ${idx + 1}`}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2" />
+
+                        {/* Cover Badge */}
+                        {idx === 0 ? (
+                          <span className="absolute top-1.5 left-1.5 rounded bg-brand-700 text-white text-[10px] font-bold px-1.5 py-0.5 shadow-sm flex items-center gap-1">
+                            <Star size={10} className="fill-white" /> Primary Cover
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetCover(idx)}
+                            className="absolute top-1.5 left-1.5 rounded bg-black/70 hover:bg-black/90 text-white text-[10px] font-medium px-1.5 py-0.5 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          >
+                            Set Cover
+                          </button>
+                        )}
+
+                        {/* Remove Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="absolute top-1.5 right-1.5 rounded-full bg-red-600/90 hover:bg-red-700 text-white p-1 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                          title="Remove image"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </Card>
 
             {/* Cascading Geo Location */}

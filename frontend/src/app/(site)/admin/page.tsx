@@ -37,6 +37,9 @@ import {
   TrendingUp,
   User,
   Users,
+  Mail,
+  Phone,
+  Check,
   X,
   XCircle,
 } from "lucide-react";
@@ -46,10 +49,10 @@ import { SafetyBadge } from "@/components/ui/safety-badge";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "@/lib/toast-context";
 import { api } from "@/lib/api";
-import { Booking, PaymentEscrow, Warning, LandslideReport } from "@/lib/types";
+import { Booking, PaymentEscrow, Warning, LandslideReport, HostUser } from "@/lib/types";
 import { formatINR, cn } from "@/lib/utils";
 
-type AdminTab = "bookings" | "completed" | "refunds" | "alerts" | "moderation" | "source_health";
+type AdminTab = "bookings" | "completed" | "refunds" | "alerts" | "moderation" | "source_health" | "hosts";
 
 export default function AdminDashboardPage() {
   const { user, isAdmin } = useAuth();
@@ -60,8 +63,24 @@ export default function AdminDashboardPage() {
   const [reports, setReports] = useState<LandslideReport[]>([]);
   const [moderationReports, setModerationReports] = useState<any[]>([]);
   const [sourceHealth, setSourceHealth] = useState<any>(null);
+  const [hosts, setHosts] = useState<HostUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Farm Owners / Hosts Filter & Search State
+  const [hostSearch, setHostSearch] = useState("");
+  const [hostFilter, setHostFilter] = useState<"all" | "verified" | "pending" | "with_farms">("all");
+  const [showAddHostModal, setShowAddHostModal] = useState(false);
+  const [newHostForm, setNewHostForm] = useState({
+    first_name: "",
+    last_name: "",
+    email: "",
+    phone_number: "",
+    password: "",
+    is_verified: true,
+  });
+  const [submittingHost, setSubmittingHost] = useState(false);
+  const [togglingHostId, setTogglingHostId] = useState<number | null>(null);
 
   // Simulation Alert State
   const [showSimModal, setShowSimModal] = useState(false);
@@ -101,18 +120,20 @@ export default function AdminDashboardPage() {
 
   async function loadAdminData() {
     try {
-      const [bookingsData, escrowsData, warningsData, reportsData, healthRes] = await Promise.all([
+      const [bookingsData, escrowsData, warningsData, reportsData, healthRes, hostsData] = await Promise.all([
         api.bookings.list(),
         api.escrow.list(),
         api.warnings.list("all"),
         api.reports.list(),
         api.safety.getSourceHealth(),
+        api.hosts.list().catch(() => []),
       ]);
       setBookings(bookingsData);
       setEscrows(escrowsData);
       setWarnings(warningsData);
       setReports(reportsData);
       setModerationReports(reportsData);
+      setHosts(hostsData || []);
       if (healthRes.success && healthRes.data) {
         setSourceHealth(healthRes.data);
       }
@@ -318,6 +339,97 @@ export default function AdminDashboardPage() {
     }
   };
 
+  // Action: Add Farm Owner
+  const handleAddHost = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newHostForm.first_name.trim() || !newHostForm.last_name.trim() || !newHostForm.email.trim()) {
+      toast.error("Please fill in first name, last name, and email.", "Validation Error");
+      return;
+    }
+    setSubmittingHost(true);
+    try {
+      const res = await api.hosts.create(newHostForm);
+      if (!res.success) {
+        toast.error(res.error || "Failed to create farm owner", "Error");
+        return;
+      }
+      toast.success(
+        `Farm Owner "${newHostForm.first_name} ${newHostForm.last_name}" registered successfully!`,
+        "Host Added"
+      );
+      setShowAddHostModal(false);
+      setNewHostForm({
+        first_name: "",
+        last_name: "",
+        email: "",
+        phone_number: "",
+        password: "",
+        is_verified: true,
+      });
+      loadAdminData();
+    } catch (err: any) {
+      toast.error(err.message || "Failed to create farm owner", "Error");
+    } finally {
+      setSubmittingHost(false);
+    }
+  };
+
+  // Action: Toggle Host Verification
+  const handleToggleHostVerify = async (hostId: number, currentVerified: boolean) => {
+    setTogglingHostId(hostId);
+    try {
+      const res = await api.hosts.toggleVerify(hostId, !currentVerified);
+      if (!res.success) {
+        toast.error(res.error || "Failed to update verification status", "Error");
+        return;
+      }
+      setHosts((prev) =>
+        prev.map((h) => (h.id === hostId ? { ...h, is_verified: !currentVerified } : h))
+      );
+      toast.success(
+        !currentVerified ? "Farm Owner verified! Badge activated." : "Host verification revoked.",
+        "Status Updated"
+      );
+    } catch (err: any) {
+      toast.error(err.message || "Failed to update status", "Error");
+    } finally {
+      setTogglingHostId(null);
+    }
+  };
+
+  // Host Computed Metrics
+  const verifiedHostsCount = hosts.filter((h) => h.is_verified).length;
+  const pendingHostsCount = hosts.filter((h) => !h.is_verified).length;
+  const totalHostProperties = hosts.reduce((sum, h) => sum + (h.farms?.length || 0), 0);
+
+  // Filtered Hosts
+  const filteredHosts = hosts.filter((h) => {
+    const term = hostSearch.toLowerCase().trim();
+    const fullName = `${h.first_name} ${h.last_name}`.toLowerCase();
+    const emailMatch = h.email.toLowerCase().includes(term);
+    const phoneMatch = Boolean(h.phone_number && h.phone_number.toLowerCase().includes(term));
+    const farmMatch = (h.farms || []).some(
+      (f) =>
+        f.title.toLowerCase().includes(term) ||
+        f.district.toLowerCase().includes(term) ||
+        f.state.toLowerCase().includes(term)
+    );
+    const matchesSearch = !term || fullName.includes(term) || emailMatch || phoneMatch || farmMatch;
+
+    const matchesFilter =
+      hostFilter === "all"
+        ? true
+        : hostFilter === "verified"
+        ? h.is_verified
+        : hostFilter === "pending"
+        ? !h.is_verified
+        : hostFilter === "with_farms"
+        ? (h.farms || []).length > 0
+        : true;
+
+    return matchesSearch && matchesFilter;
+  });
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 space-y-8">
       {/* Top Header */}
@@ -364,7 +476,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {/* Total Bookings */}
         <Card className="p-5 flex flex-col justify-between border-l-4 border-l-brand-700">
           <div className="flex items-center justify-between">
@@ -446,6 +558,30 @@ export default function AdminDashboardPage() {
             </p>
           </div>
         </Card>
+
+        {/* Registered Farm Owners & Hosts */}
+        <Card className="p-5 flex flex-col justify-between border-l-4 border-l-purple-600">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-ink-subtle">
+              Farm Owners
+            </span>
+            <div className="size-8 rounded-lg bg-purple-50 flex items-center justify-center text-purple-700">
+              <Building2 size={18} />
+            </div>
+          </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <p className="text-3xl font-extrabold text-purple-700">{hosts.length}</p>
+              <span className="text-xs font-bold text-purple-800">
+                ({verifiedHostsCount} Verified)
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-ink-muted flex items-center gap-1">
+              <span>Properties listed:</span>
+              <strong className="font-semibold text-purple-900">{totalHostProperties} stays</strong>
+            </p>
+          </div>
+        </Card>
       </div>
 
       {/* Tabs Header */}
@@ -463,6 +599,20 @@ export default function AdminDashboardPage() {
           >
             <Calendar size={16} />
             <span>All Bookings ({bookings.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab("hosts")}
+            className={cn(
+              "flex items-center gap-2 border-b-2 py-3 px-1 text-sm font-bold transition-colors cursor-pointer",
+              activeTab === "hosts"
+                ? "border-brand-700 text-brand-700"
+                : "border-transparent text-ink-muted hover:text-ink"
+            )}
+          >
+            <Building2 size={16} />
+            <span>Farm Owners ({hosts.length})</span>
           </button>
 
           <button
@@ -695,6 +845,244 @@ export default function AdminDashboardPage() {
                 </tbody>
               </table>
             </Card>
+          )}
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* TAB: REGISTERED FARM OWNERS & HOSTS */}
+      {/* ------------------------------------------------------------- */}
+      {activeTab === "hosts" && (
+        <div className="space-y-6">
+          {/* Action & Filter Bar */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-subtle" />
+              <input
+                type="text"
+                placeholder="Search by host name, email, phone, or farm stays..."
+                value={hostSearch}
+                onChange={(e) => setHostSearch(e.target.value)}
+                className="w-full rounded-lg border border-line bg-surface py-2 pl-9 pr-4 text-xs sm:text-sm focus:border-brand-700 focus:outline-none"
+              />
+              {hostSearch && (
+                <button
+                  type="button"
+                  onClick={() => setHostSearch("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-subtle hover:text-ink cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Filter pills */}
+              <div className="flex rounded-lg border border-line p-1 bg-surface text-xs">
+                {[
+                  { id: "all", label: `All (${hosts.length})` },
+                  { id: "verified", label: `Verified (${verifiedHostsCount})` },
+                  { id: "pending", label: `Pending (${pendingHostsCount})` },
+                  { id: "with_farms", label: `With Stays (${hosts.filter((h) => (h.farms || []).length > 0).length})` },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setHostFilter(tab.id as any)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-md font-semibold transition-all cursor-pointer",
+                      hostFilter === tab.id
+                        ? "bg-purple-700 text-white shadow-xs"
+                        : "text-ink-muted hover:text-ink"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setShowAddHostModal(true)}
+                className="gap-2 text-xs bg-purple-700 hover:bg-purple-800 text-white"
+              >
+                <Plus size={15} />
+                Add Farm Owner
+              </Button>
+            </div>
+          </div>
+
+          {/* Hosts Grid / Cards */}
+          {filteredHosts.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-line p-12 text-center bg-surface">
+              <Users size={36} className="mx-auto text-ink-subtle" />
+              <h3 className="mt-3 text-base font-bold text-ink">No Farm Owners Found</h3>
+              <p className="mt-1 text-xs text-ink-muted">
+                {hostSearch
+                  ? "No farm owners match your search query."
+                  : "No registered farm owners found in this filter category."}
+              </p>
+              <div className="mt-5">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setShowAddHostModal(true)}
+                  className="gap-2 text-purple-700 border-purple-200 hover:bg-purple-50"
+                >
+                  <Plus size={14} /> Register New Farm Owner
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {filteredHosts.map((host) => {
+                const farmCount = (host.farms || []).length;
+                return (
+                  <Card
+                    key={host.id}
+                    className="p-6 flex flex-col justify-between border-t-4 border-t-purple-600 hover:shadow-md transition-shadow bg-surface"
+                  >
+                    <div>
+                      {/* Host Card Header */}
+                      <div className="flex items-start justify-between gap-3 pb-4 border-b border-line/60">
+                        <div className="flex items-center gap-3">
+                          <div className="size-12 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center font-bold text-purple-800 text-lg shrink-0">
+                            {host.first_name[0]?.toUpperCase()}
+                            {host.last_name[0]?.toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h3 className="font-extrabold text-base text-ink">
+                                {host.first_name} {host.last_name}
+                              </h3>
+                              <span className="font-mono text-[11px] text-ink-subtle bg-slate-100 px-1.5 py-0.5 rounded">
+                                HOST-#{host.id}
+                              </span>
+                            </div>
+                            <span className="text-xs text-purple-700 font-semibold">
+                              Registered Farm Owner / Host
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Verification Status Badge & Toggle Button */}
+                        <div className="flex flex-col items-end gap-1.5">
+                          {host.is_verified ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 text-xs font-bold text-emerald-800">
+                              <CheckCircle2 size={12} className="text-emerald-600" />
+                              Verified Host
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 px-2.5 py-0.5 text-xs font-bold text-amber-800">
+                              <Clock size={12} className="text-amber-600" />
+                              Verification Pending
+                            </span>
+                          )}
+
+                          <button
+                            type="button"
+                            onClick={() => handleToggleHostVerify(host.id, host.is_verified)}
+                            disabled={togglingHostId === host.id}
+                            className="text-[11px] font-semibold text-brand-700 hover:text-brand-900 underline disabled:opacity-50 cursor-pointer"
+                          >
+                            {togglingHostId === host.id
+                              ? "Updating..."
+                              : host.is_verified
+                              ? "Revoke Verification"
+                              : "Approve & Verify"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Contact Info & Metadata Grid */}
+                      <div className="grid grid-cols-2 gap-3 py-3 text-xs border-b border-line/60">
+                        <div>
+                          <span className="text-ink-subtle font-medium">Email Address:</span>
+                          <a
+                            href={`mailto:${host.email}`}
+                            className="mt-0.5 block font-semibold text-ink hover:text-brand-700 truncate"
+                          >
+                            {host.email}
+                          </a>
+                        </div>
+                        <div>
+                          <span className="text-ink-subtle font-medium">Phone Number:</span>
+                          <p className="mt-0.5 font-semibold text-ink">
+                            {host.phone_number || "Not provided"}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-ink-subtle font-medium">Account Role:</span>
+                          <p className="mt-0.5 font-semibold text-ink capitalize">{host.user_type}</p>
+                        </div>
+                        <div>
+                          <span className="text-ink-subtle font-medium">Registration Date:</span>
+                          <p className="mt-0.5 font-semibold text-ink">
+                            {host.created_at
+                              ? new Date(host.created_at).toLocaleDateString("en-IN", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })
+                              : "N/A"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Managed Farmstays Section */}
+                      <div className="pt-4">
+                        <div className="flex items-center justify-between mb-2.5">
+                          <span className="text-xs font-bold uppercase tracking-wider text-ink-subtle">
+                            Listed Farmstays ({farmCount})
+                          </span>
+                          {farmCount > 0 && (
+                            <span className="text-[11px] text-emerald-700 font-semibold">
+                              Live in Directory
+                            </span>
+                          )}
+                        </div>
+
+                        {farmCount === 0 ? (
+                          <div className="rounded-lg border border-dashed border-line bg-canvas/40 p-4 text-center text-xs text-ink-muted">
+                            <span>No farm stays listed under this host yet.</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {host.farms.map((farm) => (
+                              <div
+                                key={farm.id}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-line bg-canvas/60 p-2.5 text-xs hover:bg-canvas transition-colors"
+                              >
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-ink truncate">{farm.title}</span>
+                                    <span className="rounded bg-brand-50 border border-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-800 shrink-0">
+                                      {farm.category}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-ink-muted truncate">
+                                    {farm.district}, {farm.state} &bull; Up to {farm.max_guests} guests &bull;{" "}
+                                    {formatINR(farm.nightly_rate)}/night
+                                  </p>
+                                </div>
+                                <ButtonLink
+                                  href={`/farms/${farm.slug}`}
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-[11px] py-1 px-2.5 shrink-0"
+                                >
+                                  View Farm <ExternalLink size={11} className="ml-1" />
+                                </ButtonLink>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
           )}
         </div>
       )}
@@ -1007,6 +1395,20 @@ export default function AdminDashboardPage() {
                     )}
                   >
                     <div>
+                      {/* Alert Photo Banner */}
+                      <div className="relative h-36 w-full rounded-lg overflow-hidden mb-3.5 bg-slate-900 group">
+                        <img
+                          src={w.imageUrl || `https://picsum.photos/seed/${w.id}/800/600`}
+                          alt={w.title}
+                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <span className="absolute bottom-2 left-2.5 text-xs font-bold text-white drop-shadow-sm">
+                          {w.farmName || "Hazard Impact Zone"}
+                        </span>
+                      </div>
+
                       {/* Top Badges */}
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex flex-wrap items-center gap-2">
@@ -1790,6 +2192,128 @@ export default function AdminDashboardPage() {
                   className="bg-danger hover:bg-red-700 text-white"
                 >
                   {simulatingAlert ? "Dispatching..." : "Dispatch Test Alert"}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------- */}
+      {/* MODAL 3: REGISTER NEW FARM OWNER */}
+      {/* ------------------------------------------------------------- */}
+      {showAddHostModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-line bg-surface p-6 sm:p-8 shadow-xl space-y-5 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-full bg-purple-100 flex items-center justify-center text-purple-700">
+                  <Building2 size={20} />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-ink">Register New Farm Owner</h3>
+                  <p className="text-xs text-ink-subtle">Direct Administrator Onboarding</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddHostModal(false)}
+                className="text-ink-subtle hover:text-ink cursor-pointer"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddHost} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-ink mb-1">First Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newHostForm.first_name}
+                    onChange={(e) => setNewHostForm({ ...newHostForm, first_name: e.target.value })}
+                    placeholder="e.g. Ramesh"
+                    className="w-full rounded-lg border border-line bg-canvas p-2.5 text-xs text-ink focus:border-brand-700 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-ink mb-1">Last Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newHostForm.last_name}
+                    onChange={(e) => setNewHostForm({ ...newHostForm, last_name: e.target.value })}
+                    placeholder="e.g. Rawat"
+                    className="w-full rounded-lg border border-line bg-canvas p-2.5 text-xs text-ink focus:border-brand-700 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  value={newHostForm.email}
+                  onChange={(e) => setNewHostForm({ ...newHostForm, email: e.target.value })}
+                  placeholder="ramesh.rawat@example.com"
+                  className="w-full rounded-lg border border-line bg-canvas p-2.5 text-xs text-ink focus:border-brand-700 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Phone Number (Alerts &amp; SMS)</label>
+                <input
+                  type="text"
+                  value={newHostForm.phone_number}
+                  onChange={(e) => setNewHostForm({ ...newHostForm, phone_number: e.target.value })}
+                  placeholder="+91 98765 12345"
+                  className="w-full rounded-lg border border-line bg-canvas p-2.5 text-xs text-ink focus:border-brand-700 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-ink mb-1">Initial Password (Optional)</label>
+                <input
+                  type="password"
+                  value={newHostForm.password}
+                  onChange={(e) => setNewHostForm({ ...newHostForm, password: e.target.value })}
+                  placeholder="Leave blank to auto-generate secure password"
+                  className="w-full rounded-lg border border-line bg-canvas p-2.5 text-xs text-ink focus:border-brand-700 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="admin_pre_verify"
+                  checked={newHostForm.is_verified}
+                  onChange={(e) => setNewHostForm({ ...newHostForm, is_verified: e.target.checked })}
+                  className="rounded border-line text-brand-700 focus:ring-brand-700 size-4"
+                />
+                <label htmlFor="admin_pre_verify" className="text-xs font-medium text-ink cursor-pointer">
+                  Mark host as Pre-Verified immediately (Skip email verification hold)
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-line/60">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="md"
+                  onClick={() => setShowAddHostModal(false)}
+                  disabled={submittingHost}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  size="md"
+                  disabled={submittingHost}
+                  className="bg-purple-700 hover:bg-purple-800 text-white"
+                >
+                  {submittingHost ? "Registering..." : "Register Farm Owner"}
                 </Button>
               </div>
             </form>

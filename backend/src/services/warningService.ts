@@ -125,7 +125,9 @@ export const issueHostManualWarning = async (
 };
 
 export const listAllWarnings = async (status?: string) => {
-  let query = supabase.from("warnings").select("*, farms(title, slug), users(first_name, last_name, email)");
+  let query = supabase
+    .from("warnings")
+    .select("*, farms(title, slug, images), landslide_reports(image_s3_url, location_name), users(first_name, last_name, email)");
   if (status && status !== "all") {
     query = query.eq("status", status);
   }

@@ -8,6 +8,8 @@ import reportRoutes from "./reportRoutes.js";
 import warningRoutes from "./warningRoutes.js";
 import safetyRoutes from "./safetyRoutes.js";
 import notificationRoutes from "./notificationRoutes.js";
+import { getStats } from "../controllers/authController.js";
+import { asyncHandler } from "../middleware/errorHandler.js";
 import { isLiveSupabaseConfigured } from "../config/supabase.js";
 
 const apiRouter = Router();
@@ -22,6 +24,9 @@ apiRouter.get("/ping", (req, res) => {
     database: isLiveSupabaseConfigured() ? "connected" : "misconfigured",
   });
 });
+
+// Platform stats endpoint
+apiRouter.get("/stats", asyncHandler(getStats));
 
 apiRouter.use("/auth", authRoutes);
 apiRouter.use("/farms", farmRoutes);

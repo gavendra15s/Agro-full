@@ -4,6 +4,10 @@ import {
   loginUser,
   verifyUserEmail,
   resendUserVerification,
+  getPlatformStats,
+  listAllHosts,
+  createHostAccount,
+  verifyHostAccount,
 } from "../services/authService.js";
 import { AuthenticatedRequest } from "../middleware/auth.js";
 
@@ -96,5 +100,59 @@ export const me = async (req: AuthenticatedRequest, res: Response): Promise<void
     res.status(200).json({ success: true, data: req.user });
   } catch (err: any) {
     res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+};
+
+export const getStats = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const stats = await getPlatformStats();
+    res.status(200).json({ success: true, data: stats });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to retrieve stats" });
+  }
+};
+
+export const getHosts = async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const hosts = await listAllHosts();
+    res.status(200).json({ success: true, count: hosts.length, data: hosts });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || "Failed to retrieve hosts" });
+  }
+};
+
+export const createHost = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { first_name, last_name, email, phone_number, password, is_verified } = req.body;
+    if (!first_name || !last_name || !email) {
+      res.status(400).json({ success: false, error: "First name, last name, and email are required." });
+      return;
+    }
+    const host = await createHostAccount({
+      first_name,
+      last_name,
+      email,
+      phone_number,
+      password,
+      is_verified,
+    });
+    res.status(201).json({ success: true, data: host });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message || "Failed to create farm owner" });
+  }
+};
+
+export const toggleHostVerification = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const hostId = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const { is_verified } = req.body;
+    if (typeof is_verified !== "boolean") {
+      res.status(400).json({ success: false, error: "is_verified boolean is required." });
+      return;
+    }
+    const updated = await verifyHostAccount(hostId, is_verified);
+    res.status(200).json({ success: true, data: updated });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message || "Failed to update host status" });
   }
 };

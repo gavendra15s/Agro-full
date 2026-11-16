@@ -84,6 +84,44 @@ export interface Warning {
   description: string;
   affectedFarmsCount: number;
   affectedBookingsCount: number;
+  imageUrl?: string;
+}
+
+export interface PlatformStats {
+  totalUsers: number;
+  guestsCount: number;
+  hostsCount: number;
+  adminsCount: number;
+  totalFarms: number;
+  activeWarnings: number;
+  totalBookings: number;
+  monitoredDistricts: number;
+}
+
+export interface HostFarmSummary {
+  id: number;
+  slug: string;
+  title: string;
+  category: string;
+  state: string;
+  district: string;
+  subdistrict?: string;
+  nightly_rate: number;
+  max_guests: number;
+  images: string[];
+  created_at: string;
+}
+
+export interface HostUser {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone_number?: string;
+  user_type: "host";
+  is_verified: boolean;
+  created_at: string;
+  farms: HostFarmSummary[];
 }
 
 export interface PaymentTransactionLog {
