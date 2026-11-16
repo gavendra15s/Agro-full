@@ -97,8 +97,9 @@ export default function AdminDashboardPage() {
   // Filters & Search
   const [bookingFilter, setBookingFilter] = useState<string>("all");
   const [bookingSearch, setBookingSearch] = useState<string>("");
-  const [alertSourceFilter, setAlertSourceFilter] = useState<"all" | "Automated_CNN" | "Manual_Host">("all");
+  const [alertSourceFilter, setAlertSourceFilter] = useState<"all" | "Automated_CNN" | "Manual_Host" | "Photo_Verified">("all");
   const [alertStatusFilter, setAlertStatusFilter] = useState<string>("all");
+  const [moderatingId, setModeratingId] = useState<string | number | null>(null);
 
   // Refund Modal State
   const [refundModalPayment, setRefundModalPayment] = useState<PaymentEscrow | null>(null);
@@ -147,21 +148,25 @@ export default function AdminDashboardPage() {
   }
 
   const handleModerationDecision = async (reportId: number | string, decision: "Confirm" | "Reject") => {
+    if (moderatingId) return;
+    setModeratingId(reportId);
     try {
       const res = await api.reports.submitDecision(reportId, decision);
       if (res.success) {
         toast.success(
           decision === "Confirm"
-            ? "Report verified! Network alert dispatched."
+            ? "Report verified! Network alert dispatched to Alerts & Warnings tab."
             : "Report rejected and archived.",
           "Decision Logged"
         );
-        loadAdminData();
+        await loadAdminData();
       } else {
         toast.error(res.error || "Failed to process decision", "Moderation Error");
       }
     } catch (err: any) {
       toast.error(err.message, "Network Error");
+    } finally {
+      setModeratingId(null);
     }
   };
 
@@ -248,8 +253,13 @@ export default function AdminDashboardPage() {
 
   // Filtered Alerts
   const filteredAlerts = warnings.filter((w) => {
+    const isPhoto = w.warningSource === "Photo_Verified" || (typeof w.id === "string" && w.id.startsWith("WRN-CONF"));
     const matchesSource =
-      alertSourceFilter === "all" ? true : w.warningSource === alertSourceFilter;
+      alertSourceFilter === "all"
+        ? true
+        : alertSourceFilter === "Photo_Verified"
+        ? isPhoto
+        : w.warningSource === alertSourceFilter;
     const matchesStatus =
       alertStatusFilter === "all" ? true : w.status.toLowerCase() === alertStatusFilter.toLowerCase();
     return matchesSource && matchesStatus;
@@ -1338,6 +1348,7 @@ export default function AdminDashboardPage() {
               <div className="flex rounded-lg border border-line p-1 bg-surface">
                 {[
                   { id: "all", label: "All Alerts" },
+                  { id: "Photo_Verified", label: "Path B Photo Verified" },
                   { id: "Automated_CNN", label: "Automated CNN" },
                   { id: "Manual_Host", label: "Manual Broadcast" },
                 ].map((f) => (
@@ -1384,6 +1395,7 @@ export default function AdminDashboardPage() {
             <div className="grid gap-5 md:grid-cols-2">
               {filteredAlerts.map((w) => {
                 const isAuto = w.warningSource === "Automated_CNN";
+                const isPhoto = w.warningSource === "Photo_Verified" || (typeof w.id === "string" && w.id.startsWith("WRN-CONF"));
                 return (
                   <Card
                     key={w.id}
@@ -1415,13 +1427,15 @@ export default function AdminDashboardPage() {
                           <span
                             className={cn(
                               "inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider",
-                              isAuto
+                              isPhoto
+                                ? "bg-emerald-100 text-emerald-900 border border-emerald-300"
+                                : isAuto
                                 ? "bg-purple-100 text-purple-900 border border-purple-200"
                                 : "bg-amber-100 text-amber-900 border border-amber-200"
                             )}
                           >
-                            {isAuto ? <Cpu size={12} /> : <User size={12} />}
-                            {isAuto ? "Automated CNN Generated" : "Manual Host / Admin"}
+                            {isPhoto ? <Camera size={12} /> : isAuto ? <Cpu size={12} /> : <User size={12} />}
+                            {isPhoto ? "Path B Photo Verified" : isAuto ? "Automated CNN Generated" : "Manual Host / Admin"}
                           </span>
 
                           <span
@@ -1493,7 +1507,7 @@ export default function AdminDashboardPage() {
                     {/* Actions */}
                     <div className="mt-5 flex items-center justify-between border-t border-line pt-3">
                       <span className="text-[11px] text-ink-subtle">
-                        {isAuto ? "Sourced via CNN satellite / photo inference" : "Direct human broadcast"}
+                        {isPhoto ? "Sourced via Path B Verified Citizen Photo" : isAuto ? "Sourced via CNN satellite / photo inference" : "Direct human broadcast"}
                       </span>
                       {w.status === "Active" && (
                         <Button
@@ -1695,6 +1709,7 @@ export default function AdminDashboardPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              disabled={moderatingId === r.id}
                               onClick={() => handleModerationDecision(r.id, "Reject")}
                               className="text-xs text-danger border-rose-200 hover:bg-rose-50"
                             >
@@ -1704,11 +1719,21 @@ export default function AdminDashboardPage() {
                             <Button
                               size="sm"
                               variant="primary"
+                              disabled={moderatingId === r.id}
                               onClick={() => handleModerationDecision(r.id, "Confirm")}
                               className="text-xs bg-brand-700 hover:bg-brand-800 text-white"
                             >
-                              <CheckCircle2 size={14} className="mr-1" />
-                              Verify &amp; Broadcast Alert
+                              {moderatingId === r.id ? (
+                                <>
+                                  <div className="size-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-1.5" />
+                                  Dispatching...
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 size={14} className="mr-1" />
+                                  Verify &amp; Broadcast Alert
+                                </>
+                              )}
                             </Button>
                           </div>
                         )}

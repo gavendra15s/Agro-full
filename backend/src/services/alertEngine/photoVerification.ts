@@ -261,14 +261,73 @@ export class PhotoVerificationService {
     // 3. If confirmed, generate broadcast warning in warnings DB
     let broadcastWarning = null;
     if (decision === "confirm") {
+      // Prevent duplicate warnings if admin clicks Confirm multiple times
+      const { data: existingWarning } = await supabase
+        .from("warnings")
+        .select("*")
+        .eq("epicenter_lat", updatedReport.device_lat)
+        .eq("epicenter_lng", updatedReport.device_lng)
+        .eq("status", "Active")
+        .limit(1)
+        .maybeSingle();
+
+      if (existingWarning) {
+        console.log(`[PhotoModeration] Warning already active for this incident (${existingWarning.warning_code}), skipping duplicate.`);
+        return { report: updatedReport, decision, broadcastWarning: existingWarning };
+      }
+
+      // Sync into landslide_reports so the warning has its real photo and GIS pin
+      let linkedReportId: number | null = null;
+      if (updatedReport.photo_url || updatedReport.image_s3_url) {
+        const { data: existingLs } = await supabase
+          .from("landslide_reports")
+          .select("id")
+          .eq("report_code", updatedReport.report_code || `REP-${updatedReport.id}`)
+          .maybeSingle();
+
+        if (existingLs) {
+          linkedReportId = existingLs.id;
+        } else {
+          const { data: newLs } = await supabase
+            .from("landslide_reports")
+            .insert({
+              report_code: updatedReport.report_code || `REP-CONF-${Date.now().toString().slice(-4)}`,
+              image_s3_url: updatedReport.photo_url || updatedReport.image_s3_url,
+              latitude: updatedReport.device_lat,
+              longitude: updatedReport.device_lng,
+              location_name: updatedReport.location_name || "Mountain Transit Corridor",
+              details: updatedReport.details || "Citizen verified photo hazard report.",
+              cnn_confidence_score: (updatedReport.credibility_score || 85) / 100,
+              processing_status: "Processed",
+              severity: updatedReport.credibility_score >= 80 ? "Critical" : "High",
+            })
+            .select("id")
+            .single();
+
+          if (newLs) linkedReportId = newLs.id;
+        }
+      }
+
+      const hazardNames: Record<string, string> = {
+        landslide: "Landslide & Slope Movement",
+        rockfall: "Rockfall Hazard",
+        weather_hazard: "Severe Storm / Wind Hazard",
+        road_blockage: "Road Blockage Obstruction",
+        flood: "Flash Flood Warning",
+      };
+      const typeKey = String(updatedReport.claimed_type || "").toLowerCase().trim();
+      const hazardLabel = hazardNames[typeKey] || "Environmental Hazard";
+      const cleanTitle = `Verified ${hazardLabel}: ${updatedReport.location_name || "Transit Corridor"}`;
+
       const warningCode = `WRN-CONF-${Math.floor(Math.random() * 9000 + 1000)}`;
       const { data: warning } = await safeInsert<any>("warnings", {
         warning_code: warningCode,
-        warning_source: "Manual_Host",
+        warning_source: "Photo_Verified",
+        report_id: linkedReportId,
         farm_id: updatedReport.farm_id,
         host_id: moderatorId,
-        title: `Verified ${updatedReport.claimed_type.toUpperCase()} Hazard: ${updatedReport.location_name}`,
-        description: `${updatedReport.details || "Citizen report confirmed by platform moderator."} Credibility score: ${updatedReport.credibility_score}/100.`,
+        title: cleanTitle,
+        description: `${updatedReport.details || "Citizen photo report confirmed by platform moderator."} Credibility score: ${updatedReport.credibility_score}/100.`,
         severity: updatedReport.credibility_score >= 80 ? "Critical" : "High",
         epicenter_lat: updatedReport.device_lat,
         epicenter_lng: updatedReport.device_lng,

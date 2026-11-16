@@ -231,14 +231,17 @@ export function getHazardImage(raw: any): string {
   if (raw.image_url && typeof raw.image_url === "string" && !raw.image_url.startsWith("blob:")) {
     return raw.image_url;
   }
+  if (raw.image_s3_url && typeof raw.image_s3_url === "string" && !raw.image_s3_url.startsWith("blob:")) {
+    return raw.image_s3_url;
+  }
   if (raw.landslide_reports?.image_s3_url && typeof raw.landslide_reports.image_s3_url === "string" && !raw.landslide_reports.image_s3_url.startsWith("blob:")) {
     return raw.landslide_reports.image_s3_url;
   }
-  if (Array.isArray(raw.farms?.images) && raw.farms.images.length > 0 && typeof raw.farms.images[0] === "string" && !raw.farms.images[0].startsWith("blob:")) {
-    return raw.farms.images[0];
-  }
   if (raw.photo_url && typeof raw.photo_url === "string" && !raw.photo_url.startsWith("blob:")) {
     return raw.photo_url;
+  }
+  if (Array.isArray(raw.farms?.images) && raw.farms.images.length > 0 && typeof raw.farms.images[0] === "string" && !raw.farms.images[0].startsWith("blob:")) {
+    return raw.farms.images[0];
   }
 
   const idSeed = String(raw.warning_code || raw.id || "hazard");
@@ -259,9 +262,15 @@ export function getHazardImage(raw: any): string {
 
 export function normalizeWarning(raw: any): Warning {
   const farm = raw.farms || {};
+  const isConfirmedPhoto =
+    raw.warning_source === "Photo_Verified" ||
+    (typeof raw.warning_code === "string" && raw.warning_code.startsWith("WRN-CONF"));
+
   return {
     id: raw.warning_code || raw.id || `WRN-${Date.now()}`,
-    warningSource: raw.warning_source || raw.warningSource || "Automated_CNN",
+    warningSource: isConfirmedPhoto
+      ? "Photo_Verified"
+      : (raw.warning_source || raw.warningSource || "Automated_CNN"),
     reportId: raw.report_id ? String(raw.report_id) : raw.reportId,
     hostId: raw.host_id ? String(raw.host_id) : raw.hostId,
     farmSlug: farm.slug || raw.farmSlug,

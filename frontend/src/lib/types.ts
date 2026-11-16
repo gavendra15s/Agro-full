@@ -63,7 +63,7 @@ export interface LandslideReport {
   imageS3Url?: string;
 }
 
-export type WarningSource = "Automated_CNN" | "Manual_Host";
+export type WarningSource = "Automated_CNN" | "Manual_Host" | "Photo_Verified";
 export type WarningStatus = "Active" | "Expired" | "Revoked";
 
 export interface Warning {
