@@ -272,27 +272,15 @@ export class PhotoVerificationService {
       const hazardLabel = hazardNames[typeKey] || "Environmental Hazard";
       const cleanTitle = `Verified ${hazardLabel}: ${updatedReport.location_name || "Transit Corridor"}`;
 
-      // Prevent duplicate warnings if admin clicks Confirm multiple times for THIS specific report
-      const { data: existingWarning } = await supabase
-        .from("warnings")
-        .select("*")
-        .eq("title", cleanTitle)
-        .eq("status", "Active")
-        .limit(1)
-        .maybeSingle();
-
-      if (existingWarning) {
-        console.log(`[PhotoModeration] Warning already active for this report (${existingWarning.warning_code}), skipping duplicate.`);
-        return { report: updatedReport, decision, broadcastWarning: existingWarning };
-      }
-
       // Sync into landslide_reports so the warning has its real photo and GIS pin
       let linkedReportId: number | null = null;
+      const targetReportCode = updatedReport.report_code || `REP-${updatedReport.id}`;
+
       if (updatedReport.photo_url || updatedReport.image_s3_url) {
         const { data: existingLs } = await supabase
           .from("landslide_reports")
           .select("id")
-          .eq("report_code", updatedReport.report_code || `REP-${updatedReport.id}`)
+          .eq("report_code", targetReportCode)
           .maybeSingle();
 
         if (existingLs) {
@@ -301,7 +289,8 @@ export class PhotoVerificationService {
           const { data: newLs } = await supabase
             .from("landslide_reports")
             .insert({
-              report_code: updatedReport.report_code || `REP-CONF-${Date.now().toString().slice(-4)}`,
+              report_code: targetReportCode,
+              uploaded_by_user_id: updatedReport.user_id,
               image_s3_url: updatedReport.photo_url || updatedReport.image_s3_url,
               latitude: updatedReport.device_lat,
               longitude: updatedReport.device_lng,
@@ -318,7 +307,24 @@ export class PhotoVerificationService {
         }
       }
 
-      const warningCode = `WRN-CONF-${Math.floor(Math.random() * 9000 + 1000)}`;
+      // Prevent duplicate warning only if THIS exact incident report was already broadcasted
+      if (linkedReportId) {
+        const { data: existingWarning } = await supabase
+          .from("warnings")
+          .select("*")
+          .eq("report_id", linkedReportId)
+          .maybeSingle();
+
+        if (existingWarning) {
+          console.log(`[PhotoModeration] Warning already active for report ${targetReportCode} (${existingWarning.warning_code}), skipping duplicate.`);
+          return { report: updatedReport, decision, broadcastWarning: existingWarning };
+        }
+      }
+
+      // Generate recognizable warning code matching report ID
+      const codeDigits = String(updatedReport.report_code || "").match(/\d+/g)?.pop() || Math.floor(Math.random() * 9000 + 1000);
+      const warningCode = `WRN-CONF-${codeDigits}`;
+
       const { data: warning } = await safeInsert<any>("warnings", {
         warning_code: warningCode,
         warning_source: "Manual_Host",
