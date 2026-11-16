@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type {
   Booking,
   Farm,
@@ -65,12 +66,21 @@ async function request<T>(
 
   const url = `${API_BASE_URL}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
+  const isMutation = Boolean(options.method && options.method.toUpperCase() !== "GET");
+
+  const fetchOptions: RequestInit = {
+    ...options,
+    headers,
+    ...(isMutation
+      ? { cache: "no-store" }
+      : {
+          next: { revalidate: 30 },
+          ...(options.cache ? { cache: options.cache } : {}),
+        }),
+  };
+
   try {
-    const res = await fetch(url, {
-      ...options,
-      headers,
-      cache: "no-store",
-    });
+    const res = await fetch(url, fetchOptions);
 
     const json = await res.json();
     if (!res.ok) {
@@ -374,13 +384,13 @@ export const api = {
       });
     },
 
-    async getBySlug(slug: string): Promise<Farm | null> {
+    getBySlug: cache(async (slug: string): Promise<Farm | null> => {
       const res = await request<any>(`/farms/${slug}`);
       if (res.success && res.data) {
         return normalizeFarm(res.data);
       }
       return FALLBACK_FARMS.find((f) => f.slug === slug) || null;
-    },
+    }),
 
     async create(payload: {
       title: string;

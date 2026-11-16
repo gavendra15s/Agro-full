@@ -39,6 +39,7 @@ const SEVERITY_BADGES: Record<string, string> = {
 
 export default function WarningsFeedPage() {
   const [warnings, setWarnings] = useState<Warning[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [filterSource, setFilterSource] = useState<string>("all");
   const [filterStatus, setFilterStatus] = useState<string>("Active");
@@ -46,8 +47,13 @@ export default function WarningsFeedPage() {
 
   useEffect(() => {
     async function loadWarnings() {
-      const data = await api.warnings.list(filterStatus);
-      setWarnings(data);
+      setLoading(true);
+      try {
+        const data = await api.warnings.list(filterStatus);
+        setWarnings(data);
+      } finally {
+        setLoading(false);
+      }
     }
     loadWarnings();
   }, [filterStatus]);
@@ -170,7 +176,26 @@ export default function WarningsFeedPage() {
 
       {/* Warnings List */}
       <div className="mt-8 space-y-6">
-        {filteredWarnings.map((warning) => (
+        {loading ? (
+          <div className="space-y-6 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <Card key={i} className="overflow-hidden border-l-4 border-l-brand-300 p-0">
+                <div className="flex flex-col md:flex-row">
+                  <div className="w-full md:w-64 lg:w-72 h-52 bg-line/50 shrink-0" />
+                  <div className="p-6 flex-1 space-y-4">
+                    <div className="h-6 w-3/4 rounded bg-line/60" />
+                    <div className="h-4 w-1/2 rounded bg-line/40" />
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div className="h-12 rounded-lg bg-line/30" />
+                      <div className="h-12 rounded-lg bg-line/30" />
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          filteredWarnings.map((warning) => (
           <Card
             key={warning.id}
             className={cn(
@@ -304,9 +329,10 @@ export default function WarningsFeedPage() {
               </div>
             </div>
           </Card>
-        ))}
+        ))
+        )}
 
-        {filteredWarnings.length === 0 && (
+        {!loading && filteredWarnings.length === 0 && (
           <Card className="p-12 text-center">
             <CheckCircle2 size={40} className="mx-auto text-safe" />
             <h3 className="mt-3 text-lg font-bold">No Warnings Match Your Filter</h3>

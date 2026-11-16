@@ -3,6 +3,7 @@ import { type ReactNode, Suspense } from "react";
 import { AuthProvider } from "@/lib/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { ToastProvider } from "@/lib/toast-context";
+import { NavigationProgress } from "@/components/ui/navigation-progress";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -19,6 +20,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col">
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         <ToastProvider>
           <AuthProvider>
             <Suspense fallback={null}>

@@ -19,7 +19,7 @@ import { Card } from "@/components/ui/card";
 import { SafetyBar } from "@/components/ui/safety-badge";
 import { api } from "@/lib/api";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 export const dynamicParams = true;
 
 type Params = Promise<{ slug: string }>;

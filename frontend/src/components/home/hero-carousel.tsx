@@ -15,48 +15,42 @@ interface MediaSlide {
 }
 
 const DEFAULT_SLIDES: MediaSlide[] = [
-    {
+  {
     id: "hero-video-main",
     type: "video",
     src: "/hero/main.mp4",
-    stockVideoSrc: "/hero/video.mp4",
-    fallbackSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop",
+    fallbackSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop",
     alt: "Showing Agrotourism in India",
   },
   {
     id: "hero-video-1",
     type: "video",
     src: "/hero/video.mp4",
-    stockVideoSrc: "/hero/video.mp4",
-    fallbackSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop",
+    fallbackSrc: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1600&auto=format&fit=crop",
     alt: "Aerial view of lush green rural farm fields",
   },
   {
     id: "hero-img-1",
     type: "image",
-    src: "/hero/img1.jpg",
-    fallbackSrc: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=2000&auto=format&fit=crop",
+    src: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?q=80&w=1600&auto=format&fit=crop",
     alt: "Scenic mountain terrace farm",
   },
   {
     id: "hero-img-2",
     type: "image",
-    src: "/hero/img2.jpg",
-    fallbackSrc: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=2000&auto=format&fit=crop",
+    src: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1600&auto=format&fit=crop",
     alt: "Organic apple orchard mist",
   },
   {
     id: "hero-img-3",
     type: "image",
-    src: "/hero/img3.jpg",
-    fallbackSrc: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2000&auto=format&fit=crop",
+    src: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=1600&auto=format&fit=crop",
     alt: "Himalayan farmstay sunset",
   },
   {
     id: "hero-img-4",
     type: "image",
-    src: "/hero/img4.jpg",
-    fallbackSrc: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=2000&auto=format&fit=crop",
+    src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?q=80&w=1600&auto=format&fit=crop",
     alt: "Rural eco-tourism landscape",
   },
 ];
@@ -143,21 +137,17 @@ export function HeroCarousel({ children }: HeroCarouselProps) {
                   ref={(el) => {
                     videoRefs.current[slide.id] = el;
                   }}
-                  autoPlay
+                  autoPlay={isActive}
                   loop
                   muted
                   playsInline
+                  preload={isActive ? "auto" : "none"}
                   poster={slide.fallbackSrc}
                   className="size-full object-cover"
                 >
-                  <source src={slide.src} type="video/mp4" />
-                  {slide.stockVideoSrc && <source src={slide.stockVideoSrc} type="video/mp4" />}
-                  {/* Fallback image if video fails */}
-                  <img
-                    src={slide.fallbackSrc}
-                    alt={slide.alt}
-                    className="size-full object-cover"
-                  />
+                  {(isActive || Math.abs(index - currentIndex) <= 1) && (
+                    <source src={slide.src} type="video/mp4" />
+                  )}
                 </video>
               ) : (
                 <img
