@@ -159,8 +159,8 @@ export function normalizeBooking(raw: any): Booking {
       : raw.image || "https://picsum.photos/seed/green-valley/400/300",
     checkIn: raw.stay_start_date ? raw.stay_start_date.slice(0, 10) : raw.checkIn || "2026-09-15",
     checkOut: raw.stay_end_date ? raw.stay_end_date.slice(0, 10) : raw.checkOut || "2026-09-18",
-    guests: Number(raw.total_guests ?? raw.guests ?? 2),
-    total: Number(paymentInfo.total_charged ?? raw.total ?? 13950),
+    guests: Number(raw.total_guests ?? raw.guests ?? 1),
+    total: Number(paymentInfo.total_charged ?? raw.total ?? (raw.stay_amount ? (Number(raw.stay_amount) + Number(raw.platform_fee || 0)) : 0)),
     status: (raw.current_status?.toLowerCase() || raw.status || "upcoming") as any,
     escrowStatus: paymentInfo.escrow_status || raw.escrowStatus || "Held_In_Escrow",
     guestName: userInfo.first_name ? `${userInfo.first_name} ${userInfo.last_name || ""}`.trim() : raw.guestName,
@@ -176,6 +176,10 @@ export function normalizeEscrow(raw: any): PaymentEscrow {
   const rawTx = raw.payment_transaction_log || raw.transactions || [];
   const rawStatus = raw.statusHistory || [];
 
+  const stayAmt = Number(raw.stay_amount ?? raw.stayAmount ?? 0);
+  const platFee = Number(raw.platform_fee ?? raw.platformFee ?? Math.round(stayAmt * 0.05));
+  const totCharge = Number(raw.total_charged ?? raw.totalCharged ?? (stayAmt + platFee));
+
   return {
     paymentId: raw.payment_code || raw.paymentId || `PAY-${raw.id || "0000"}`,
     bookingId: booking.booking_code || raw.bookingId || `AGS-${raw.booking_id || "0000"}`,
@@ -184,9 +188,9 @@ export function normalizeEscrow(raw: any): PaymentEscrow {
     guestName: user.first_name
       ? `${user.first_name} ${user.last_name || ""}`.trim()
       : raw.guestName || "Verified Guest",
-    stayAmount: Number(raw.stay_amount ?? raw.stayAmount ?? 13500),
-    platformFee: Number(raw.platform_fee ?? raw.platformFee ?? 450),
-    totalCharged: Number(raw.total_charged ?? raw.totalCharged ?? 13950),
+    stayAmount: stayAmt,
+    platformFee: platFee,
+    totalCharged: totCharge,
     escrowStatus: raw.escrow_status || raw.escrowStatus || "Held_In_Escrow",
     gatewayRef: raw.gateway_ref || raw.gatewayRef || "rzp_live_000000",
     stayStartDate: booking.stay_start_date ? booking.stay_start_date.slice(0, 10) : raw.stayStartDate || "2026-09-15",

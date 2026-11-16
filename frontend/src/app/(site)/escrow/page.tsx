@@ -30,34 +30,26 @@ export default function EscrowLifecyclePage() {
   const [escrows, setEscrows] = useState<PaymentEscrow[]>([]);
   const [selectedEscrowId, setSelectedEscrowId] = useState<string>("");
   const [simulationNotice, setSimulationNotice] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadEscrows() {
-      const data = await api.escrow.list();
-      setEscrows(data);
-      if (data.length > 0 && !selectedEscrowId) {
-        setSelectedEscrowId(data[0].paymentId);
+      try {
+        const data = await api.escrow.list();
+        setEscrows(data);
+        if (data.length > 0 && !selectedEscrowId) {
+          setSelectedEscrowId(data[0].paymentId);
+        }
+      } catch (err) {
+        console.warn("Failed to load escrows:", err);
+      } finally {
+        setLoading(false);
       }
     }
     loadEscrows();
   }, []);
 
-  const activeEscrow = escrows.find((e) => e.paymentId === selectedEscrowId) || escrows[0] || {
-    paymentId: "PAY-88213",
-    bookingId: "AGS-48213",
-    farmName: "Green Valley Retreat",
-    farmSlug: "green-valley-retreat",
-    guestName: "Arjun Verma",
-    stayAmount: 13500,
-    platformFee: 450,
-    totalCharged: 13950,
-    escrowStatus: "Held_In_Escrow",
-    gatewayRef: "rzp_live_984128941",
-    stayStartDate: "2026-09-15",
-    stayEndDate: "2026-09-18",
-    transactions: [],
-    statusHistory: [],
-  };
+  const activeEscrow = escrows.find((e) => e.paymentId === selectedEscrowId) || escrows[0] || null;
 
   // Simulator actions via Backend API
   const handleSimulatePayout = async (paymentId: string) => {
@@ -284,7 +276,21 @@ export default function EscrowLifecyclePage() {
 
         {/* Right Escrow Detail View */}
         <div className="space-y-6 lg:col-span-8">
-          <Card className="p-6">
+          {loading ? (
+            <Card className="p-12 text-center">
+              <div className="mx-auto h-8 w-8 animate-spin rounded-full border-4 border-brand-600 border-t-transparent" />
+              <p className="mt-4 text-sm text-ink-muted">Loading live escrow vault records...</p>
+            </Card>
+          ) : !activeEscrow ? (
+            <Card className="p-12 text-center">
+              <ShieldCheck className="mx-auto h-12 w-12 text-brand-600/40" />
+              <h3 className="mt-4 text-base font-bold text-ink">No Escrow Records Found</h3>
+              <p className="mt-1 text-sm text-ink-muted">
+                Bookings made by travelers will dynamically create live escrow transaction records here.
+              </p>
+            </Card>
+          ) : (
+            <Card className="p-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-line pb-5">
               <div>
                 <div className="flex items-center gap-2">
@@ -415,6 +421,7 @@ export default function EscrowLifecyclePage() {
               </div>
             </div>
           </Card>
+          )}
         </div>
       </div>
     </div>
