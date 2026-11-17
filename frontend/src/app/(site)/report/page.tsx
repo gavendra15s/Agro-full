@@ -2,7 +2,7 @@ import { AlertTriangle, CheckCircle2, FileSearch, Radio, ShieldCheck } from "luc
 import { ReportForm } from "@/components/report/report-form";
 import { Card } from "@/components/ui/card";
 
-export const metadata = { title: "Report a Landslide — AgroSafe Travel" };
+export const metadata = { title: "Report a Landslide — KhetYatra" };
 
 const ASSURANCES = [
   { icon: ShieldCheck, label: "Secured Uplink" },

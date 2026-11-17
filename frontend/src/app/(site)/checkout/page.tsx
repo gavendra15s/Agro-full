@@ -5,7 +5,7 @@ import { api } from "@/lib/api";
 import { quote } from "@/lib/pricing";
 import { nightsBetween } from "@/lib/utils";
 
-export const metadata = { title: "Secure Checkout — AgroSafe Travel" };
+export const metadata = { title: "Secure Checkout — KhetYatra" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

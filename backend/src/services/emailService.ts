@@ -63,11 +63,11 @@ function emailShell(title: string, bodyHtml: string): string {
         </head>
         <body>
           <div class="container">
-            <div class="logo">AgroSafe Travel</div>
+            <div class="logo">KhetYatra</div>
             <h1>${title}</h1>
             ${bodyHtml}
             <div class="footer">
-              <p>AgroSafe Travel — Himalayan Agrotourism & Disaster Alert Escrow System.</p>
+              <p>KhetYatra — Himalayan Agrotourism & Disaster Alert Escrow System.</p>
             </div>
           </div>
         </body>
@@ -82,7 +82,7 @@ async function sendViaResend(mailOptions: {
   text: string;
   html: string;
 }): Promise<{ success: boolean; messageId: string }> {
-  const fromAddress = mailOptions.from || ENV.EMAIL_FROM || "AgroSafe Travel <onboarding@resend.dev>";
+  const fromAddress = mailOptions.from || ENV.EMAIL_FROM || "KhetYatra <onboarding@resend.dev>";
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -204,25 +204,25 @@ export async function sendVerificationEmail(
 
   const verifyUrl = `${baseUrl}/login?verify_token=${encodeURIComponent(token)}`;
 
-  const text = `Hello ${firstName},\n\nPlease verify your email for AgroSafe Travel by clicking this link:\n${verifyUrl}\n\nThis link will expire in 24 hours.\n\nSafe travels,\nAgroSafe Team`;
+  const text = `Hello ${firstName},\n\nPlease verify your email for KhetYatra by clicking this link:\n${verifyUrl}\n\nThis link will expire in 24 hours.\n\nSafe travels,\nKhetYatra Team`;
 
   const html = emailShell(
     "Verify your email address",
     `
       <p>Hi ${firstName},</p>
-      <p>Thank you for joining AgroSafe Travel. Click the button below to verify your email and activate your account:</p>
+      <p>Thank you for joining KhetYatra. Click the button below to verify your email and activate your account:</p>
       <div style="text-align: center;">
         <a href="${verifyUrl}" class="btn" target="_blank">Verify My Account</a>
       </div>
       <p style="font-size: 13px; color: #5a7566;">Or copy and paste this link in your browser:</p>
       <p class="alt-link">${verifyUrl}</p>
-      <p style="font-size: 13px; color: #5a7566;">This verification link will expire in 24 hours. If you did not create an account on AgroSafe Travel, please ignore this email.</p>
+      <p style="font-size: 13px; color: #5a7566;">This verification link will expire in 24 hours. If you did not create an account on KhetYatra, please ignore this email.</p>
     `
   );
 
   const res = await dispatchEmail({
     to: email,
-    subject: "Verify your email — AgroSafe Travel",
+    subject: "Verify your email — KhetYatra",
     text,
     html,
   });
@@ -246,13 +246,13 @@ export async function sendHostBookingEmail(
   const dashboardUrl = `${ENV.APP_URL}/host`;
   const amount = formatINR(details.stayAmount);
 
-  const text = `Hello ${hostName},\n\n${details.guestName} just booked "${details.farmTitle}" for ${details.stayStartDate} to ${details.stayEndDate} (${details.totalGuests} guest(s)).\n\nBooking Ref: ${details.bookingCode}\nStay Amount: ${amount} (held in AgroSafe Escrow until checkout)\n\nView it in your Host Dashboard:\n${dashboardUrl}\n\nSafe travels,\nAgroSafe Team`;
+  const text = `Hello ${hostName},\n\n${details.guestName} just booked "${details.farmTitle}" for ${details.stayStartDate} to ${details.stayEndDate} (${details.totalGuests} guest(s)).\n\nBooking Ref: ${details.bookingCode}\nStay Amount: ${amount} (held in KhetYatra Escrow until checkout)\n\nView it in your Host Dashboard:\n${dashboardUrl}\n\nSafe travels,\nKhetYatra Team`;
 
   const html = emailShell(
     "Your farmstay was booked",
     `
       <p>Hi ${hostName},</p>
-      <p><strong>${details.guestName}</strong> just booked <strong>${details.farmTitle}</strong>. Funds are already locked in the AgroSafe Escrow Vault and will be released to you after checkout.</p>
+      <p><strong>${details.guestName}</strong> just booked <strong>${details.farmTitle}</strong>. Funds are already locked in the KhetYatra Escrow Vault and will be released to you after checkout.</p>
       <table class="detail-table">
         <tr><td>Booking Ref</td><td>${details.bookingCode}</td></tr>
         <tr><td>Check-in</td><td>${details.stayStartDate}</td></tr>
@@ -297,7 +297,7 @@ export async function sendAdminPaymentEmail(details: {
     ? `\n\nCab Requested:\nPickup Location: ${details.cab.pickupLocation}\nPIN Code: ${details.cab.pincode}`
     : "";
 
-  const text = `Payment captured on AgroSafe Travel.\n\nBooking Ref: ${details.bookingCode}\nPayment Ref: ${details.paymentCode}\nFarm: ${details.farmTitle}\nHost: ${details.hostName}\nGuest: ${details.guestName} (${details.guestEmail})\nAmount Charged: ${amount}\nGateway Ref: ${details.gatewayRef}${cabText}\n\nFunds are held in escrow pending stay completion.\n\nEscrow Ledger:\n${escrowUrl}`;
+  const text = `Payment captured on KhetYatra.\n\nBooking Ref: ${details.bookingCode}\nPayment Ref: ${details.paymentCode}\nFarm: ${details.farmTitle}\nHost: ${details.hostName}\nGuest: ${details.guestName} (${details.guestEmail})\nAmount Charged: ${amount}\nGateway Ref: ${details.gatewayRef}${cabText}\n\nFunds are held in escrow pending stay completion.\n\nEscrow Ledger:\n${escrowUrl}`;
 
   const cabHtml = details.cab
     ? `

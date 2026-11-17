@@ -7,7 +7,7 @@ import { NavigationProgress } from "@/components/ui/navigation-progress";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AgroSafe Travel — Explore Rural India, Safely",
+  title: "KhetYatra — Explore Rural India, Safely",
   description:
     "Authenticated agrotourism experiences with real-time safety metrics and environmental landslide monitoring.",
 };

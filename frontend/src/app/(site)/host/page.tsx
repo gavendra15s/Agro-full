@@ -230,7 +230,7 @@ export default function HostDashboardPage() {
               <Building size={40} className="mx-auto text-ink-subtle" />
               <h3 className="mt-4 text-lg font-bold">No Farmstay Listings Yet</h3>
               <p className="mt-1 text-sm text-ink-muted max-w-md mx-auto">
-                List your agricultural farmstay on AgroSafe. Get automated GIS safety score calculation, real-time risk alerts, and guaranteed escrow protection.
+                List your agricultural farmstay on KhetYatra. Get automated GIS safety score calculation, real-time risk alerts, and guaranteed escrow protection.
               </p>
               <ButtonLink href="/host/farms/new" variant="primary" size="md" className="mt-6 inline-flex items-center gap-2">
                 <Plus size={16} />
@@ -328,7 +328,7 @@ export default function HostDashboardPage() {
               <Building size={36} className="mx-auto text-ink-subtle" />
               <h3 className="mt-3 text-base font-bold">Have another agricultural property?</h3>
               <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
-                Join the Himalayan AgroSafe network. Benefit from automated safety monitoring, risk matrix evaluation, and guaranteed escrow protection.
+                Join the Himalayan KhetYatra network. Benefit from automated safety monitoring, risk matrix evaluation, and guaranteed escrow protection.
               </p>
               <ButtonLink href="/host/farms/new" variant="primary" size="md" className="mt-4">
                 Add Farmstay Listing

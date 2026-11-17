@@ -408,7 +408,7 @@ export default function WarningsFeedPage() {
       {/* DFD / CFD Educational Guide */}
       <div className="mt-16 rounded-xl border border-line bg-surface p-8">
         <h3 className="text-lg font-bold flex items-center gap-2">
-          <ShieldAlert size={20} className="text-brand-700" /> How AgroSafe Warning Dispatch Operates (CFD / DFD Pipeline)
+          <ShieldAlert size={20} className="text-brand-700" /> How KhetYatra Warning Dispatch Operates (CFD / DFD Pipeline)
         </h3>
         <div className="mt-6 grid gap-6 md:grid-cols-3 text-xs leading-relaxed text-ink-muted">
           <div className="rounded-lg border border-line p-4 bg-canvas/40">
@@ -432,7 +432,7 @@ export default function WarningsFeedPage() {
               <Sparkles size={16} className="text-amber-600" /> 3. Escrow Safeguard
             </p>
             <p className="mt-2">
-              Active warnings trigger an instant lock on affected stays. Guests can cancel with a single tap for a 100% full refund directly from the AgroSafe Escrow Vault.
+              Active warnings trigger an instant lock on affected stays. Guests can cancel with a single tap for a 100% full refund directly from the KhetYatra Escrow Vault.
             </p>
           </div>
         </div>

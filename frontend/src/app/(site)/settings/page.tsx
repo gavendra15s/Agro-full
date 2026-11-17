@@ -1,6 +1,6 @@
 import { SettingsForm } from "@/components/settings/settings-form";
 
-export const metadata = { title: "Settings & Profile — AgroSafe Travel" };
+export const metadata = { title: "Settings & Profile — KhetYatra" };
 
 export default function SettingsPage() {
   return (

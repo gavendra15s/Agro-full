@@ -316,7 +316,7 @@ export default function SafetyMatrixExplorerPage() {
               <div className="rounded-lg border border-line bg-canvas/40 p-4">
                 <p className="font-bold text-ink">Monsoon Precaution Season (Jun — Sep)</p>
                 <p className="text-ink-muted mt-1">
-                  Requires 24/7 AgroSafe Sensor Monitoring. All bookings in this window are backed with 100% Escrow Protection against road blockages.
+                  Requires 24/7 KhetYatra Sensor Monitoring. All bookings in this window are backed with 100% Escrow Protection against road blockages.
                 </p>
               </div>
             </div>

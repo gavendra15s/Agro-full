@@ -1190,7 +1190,7 @@ export default function AdminDashboardPage() {
               <div className="space-y-1 max-w-2xl">
                 <h2 className="text-lg font-bold tracking-tight">100% Emergency Escrow Refund Safeguard</h2>
                 <p className="text-xs text-ink-muted leading-relaxed">
-                  AgroSafe guarantees 100% zero-liability refunds whenever automated CNN debris classification or Host/Admin warnings are triggered inside an affected farmstay corridor.
+                  KhetYatra guarantees 100% zero-liability refunds whenever automated CNN debris classification or Host/Admin warnings are triggered inside an affected farmstay corridor.
                 </p>
               </div>
               <div className="flex items-center gap-3 shrink-0">
@@ -1276,7 +1276,7 @@ export default function AdminDashboardPage() {
           {/* Full Escrow Vault Ledger (All Payments) */}
           <div className="pt-4 space-y-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-ink-subtle">
-              Complete AgroSafe Escrow Vault Ledger ({escrows.length})
+              Complete KhetYatra Escrow Vault Ledger ({escrows.length})
             </h3>
             <Card className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-sm">

@@ -117,7 +117,7 @@ export default function NewHostWarningPage() {
           </h1>
 
           <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-            Your manual warning <strong>{title}</strong> has been logged to the AgroSafe Warning DB and broadcast to the regional safety grid.
+            Your manual warning <strong>{title}</strong> has been logged to the KhetYatra Warning DB and broadcast to the regional safety grid.
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3 text-left">

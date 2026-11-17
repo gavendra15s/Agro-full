@@ -41,7 +41,7 @@ export const ENV = {
   SMTP_SECURE: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : false,
   SMTP_USER: process.env.SMTP_USER || "",
   SMTP_PASS: process.env.SMTP_PASS || "",
-  EMAIL_FROM: process.env.EMAIL_FROM || "AgroSafe Travel <autry.shashi@gmail.com>",
+  EMAIL_FROM: process.env.EMAIL_FROM || "KhetYatra <autry.shashi@gmail.com>",
   APP_URL: process.env.APP_URL || process.env.CLIENT_URL || "http://localhost:3000",
 
   // Admin notification recipient (payment alerts)

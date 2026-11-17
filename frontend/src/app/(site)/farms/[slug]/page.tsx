@@ -40,9 +40,9 @@ export async function generateMetadata({ params }: { params: Params }) {
   try {
     const { slug } = await params;
     const farm = await api.farms.getBySlug(slug);
-    return { title: farm ? `${farm.name} — AgroSafe Travel` : "Farmstay — AgroSafe Travel" };
+    return { title: farm ? `${farm.name} — KhetYatra` : "Farmstay — KhetYatra" };
   } catch {
-    return { title: "Farmstay — AgroSafe Travel" };
+    return { title: "Farmstay — KhetYatra" };
   }
 }
 

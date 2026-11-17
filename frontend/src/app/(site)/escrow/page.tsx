@@ -77,7 +77,7 @@ export default function EscrowLifecyclePage() {
             id: `LOG-${Date.now().toString().slice(-3)}`,
             previousStatus: item.escrowStatus,
             newStatus: "Completed",
-            reason: "Guest checkout confirmed. Payout triggered via AgroSafe Lifecycle Pipeline.",
+            reason: "Guest checkout confirmed. Payout triggered via KhetYatra Lifecycle Pipeline.",
             changedAt: new Date().toISOString().slice(0, 16).replace("T", " "),
           };
           return {

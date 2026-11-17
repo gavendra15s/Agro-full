@@ -211,7 +211,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
           return;
         }
 
-        toast.success(`Account created successfully! Welcome to AgroSafe.`, "Registration Complete");
+        toast.success(`Account created successfully! Welcome to KhetYatra.`, "Registration Complete");
         setDone(true);
         const target = redirectTargetFor(res.user?.user_type || role, searchParams.get("redirect"));
         setTimeout(() => router.push(target), 800);
@@ -477,7 +477,7 @@ export function AuthCard({ initialRole = "guest" }: { initialRole?: string }) {
                 autoComplete="email"
                 placeholder={
                   role === "admin"
-                    ? "admin@agrosafe.com"
+                    ? "admin@khetyatra.com"
                     : role === "host"
                     ? "host@myfarmstay.com"
                     : "user@example.com"

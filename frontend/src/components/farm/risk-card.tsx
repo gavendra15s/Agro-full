@@ -233,7 +233,7 @@ export function RiskCard({
             </div>
             <p className="mt-1 text-xs leading-relaxed text-amber-700">
               {error ||
-                "Live satellite or meteorological feeds for this date are unavailable. Per safety policy, AgroSafe never defaults to 'Safe' when data is missing."}
+                "Live satellite or meteorological feeds for this date are unavailable. Per safety policy, KhetYatra never defaults to 'Safe' when data is missing."}
             </p>
           </div>
         ) : (

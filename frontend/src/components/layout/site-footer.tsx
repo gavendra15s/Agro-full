@@ -11,7 +11,7 @@ export function SiteFooter() {
           <div className="lg:col-span-2 space-y-3">
             <div className="flex items-center gap-2">
               <span className="size-2.5 rounded-full bg-brand-600 inline-block" />
-              <span className="font-extrabold text-lg text-brand-800">AgroSafe Travel</span>
+              <span className="font-extrabold text-lg text-brand-800">KhetYatra</span>
             </div>
             <p className="text-xs text-ink-muted max-w-sm leading-relaxed">
               Pioneering safe, disaster-resilient agrotourism across mountain and rural farming belts.
@@ -63,7 +63,7 @@ export function SiteFooter() {
         </div>
 
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-line pt-6 text-xs text-ink-subtle">
-          <p>© 2026 AgroSafe Travel. All rights reserved. Zero-Liability Escrow Protected.</p>
+          <p>© 2026 KhetYatra. All rights reserved. Zero-Liability Escrow Protected.</p>
           <div className="flex gap-4">
             <Link href="/safety" className="hover:underline">Terms of Escrow</Link>
             <Link href="/settings" className="hover:underline">Privacy & Location Data</Link>

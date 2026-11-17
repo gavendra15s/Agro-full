@@ -287,7 +287,7 @@ export default function NewFarmPage() {
         return;
       }
 
-      toast.success(`"${name}" published to AgroSafe network!`, "Farmstay Listed");
+      toast.success(`"${name}" published to KhetYatra network!`, "Farmstay Listed");
       setSubmitted(true);
     } catch (err: any) {
       toast.error(err.message || "Failed to publish listing", "Error");
@@ -305,7 +305,7 @@ export default function NewFarmPage() {
             Farmstay Published Successfully!
           </h1>
           <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted">
-            <strong>{name}</strong> is now registered in the AgroSafe database.
+            <strong>{name}</strong> is now registered in the KhetYatra database.
             It has been connected to the regional Hazard Safety Matrix and Escrow Protection Gateway.
           </p>
 
@@ -754,7 +754,7 @@ export default function NewFarmPage() {
             </Card>
 
             <div className="rounded-lg border border-line bg-surface p-4 text-xs text-ink-muted space-y-2">
-              <p className="font-semibold text-ink">AgroSafe Guarantee for Hosts:</p>
+              <p className="font-semibold text-ink">KhetYatra Guarantee for Hosts:</p>
               <ul className="list-disc list-inside space-y-1 text-ink-subtle">
                 <li>Automatic risk assessment on the 12-month Himalayan Matrix.</li>
                 <li>Stay amounts locked in Escrow Vault at time of guest booking.</li>

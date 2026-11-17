@@ -160,7 +160,7 @@ export const handleRazorpayWebhook = async (req: any, res: Response): Promise<vo
           transaction_type: "Charge",
           payment_gateway_ref: paymentId,
           amount: payment.total_charged || paymentEntity.amount / 100,
-          note: `Webhook payment.captured: Funds locked in AgroSafe Escrow Vault.`,
+          note: `Webhook payment.captured: Funds locked in KhetYatra Escrow Vault.`,
         });
       }
     }

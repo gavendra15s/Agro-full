@@ -78,7 +78,7 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
         amount,
         currency,
         order_id,
-        name: "AgroSafe Travel",
+        name: "KhetYatra",
         description: "Farmstay booking — held in escrow",
         prefill: {
           name: user?.name,
@@ -153,7 +153,7 @@ export function PaymentForm({ total, farmId, checkIn, checkOut, guests }: Paymen
         <h3 className="text-sm font-semibold">Payment</h3>
         <p className="mt-2 text-sm text-ink-muted">
           You&apos;ll be redirected to Razorpay&apos;s secure checkout to pay by card, UPI, or net banking. Funds are
-          locked in the AgroSafe Escrow Vault until 24 hours after check-in.
+          locked in the KhetYatra Escrow Vault until 24 hours after check-in.
         </p>
       </div>
 

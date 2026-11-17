@@ -77,7 +77,7 @@ export function SiteHeader() {
           className="flex items-center gap-2 text-xl font-extrabold tracking-tight text-brand-700 shrink-0"
         >
           <span className="size-2.5 rounded-full bg-brand-600 inline-block" />
-          AgroSafe Travel
+          KhetYatra
         </Link>
 
         {/* Center Desktop Navigation */}

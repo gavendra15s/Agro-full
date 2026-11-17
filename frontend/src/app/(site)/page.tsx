@@ -55,9 +55,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       {/* About / Introduction */}
       <section id="about" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">About AgroSafe Travel</h2>
+          <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">About KhetYatra</h2>
           <p className="mt-4 text-ink-muted">
-            AgroSafe Travel connects travelers with verified farmstays across the Himalayan belt, pairing
+            KhetYatra connects travelers with verified farmstays across the Himalayan belt, pairing
             every booking with an escrow-protected payment and real-time landslide monitoring for the
             region you&apos;re visiting. Hosts get a direct channel to safety-conscious guests; guests get
             a stay they can trust, and their money back if the ground genuinely isn&apos;t safe to travel to.
@@ -147,7 +147,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       <section id="strategic-plan" className="mx-auto max-w-7xl px-4 py-14 sm:px-6 sm:py-20 lg:px-8">
         <div className="max-w-2xl">
           <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Strategic Plan</h2>
-          <p className="mt-2 text-ink-muted">Where AgroSafe Travel is headed, in three phases.</p>
+          <p className="mt-2 text-ink-muted">Where KhetYatra is headed, in three phases.</p>
         </div>
 
         <ol className="mt-10 space-y-6">

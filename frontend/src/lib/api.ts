@@ -214,7 +214,7 @@ export function normalizeEscrow(raw: any): PaymentEscrow {
       amount: Number(tx.amount || 0),
       gatewayRef: tx.payment_gateway_ref || tx.gatewayRef || "rzp_live_0000",
       processedAt: tx.processed_at ? tx.processed_at.slice(0, 16).replace("T", " ") : "2026-08-02 14:22",
-      note: tx.note || "Transaction logged in AgroSafe Escrow Vault.",
+      note: tx.note || "Transaction logged in KhetYatra Escrow Vault.",
     })),
     statusHistory: rawStatus.map((s: any, i: number) => ({
       id: s.id ? (typeof s.id === "number" ? `LOG-${s.id}` : s.id) : `LOG-00${i + 1}`,

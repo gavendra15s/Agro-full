@@ -507,7 +507,7 @@ export const FARMS: Farm[] = [
     amenities: ["Almond Shelling", "Rural Connect Wi-Fi", "Safety Monitoring & Radar", "Wood Fire Stoves", "Escrow Protection"],
     cancellationPolicy: "100% automated refund on mountain corridor road alerts.",
     emergencyContact: "Caretaker Tenzin: +91 98765 11009.",
-    regionalGuidelines: "Check Hindustan-Tibet road status via AgroSafe warning system.",
+    regionalGuidelines: "Check Hindustan-Tibet road status via KhetYatra warning system.",
   },
   {
     id: 20,
@@ -627,7 +627,7 @@ export const FARMS: Farm[] = [
     amenities: ["Wilson Apple Tour", "Rural Connect Wi-Fi", "Safety Sensors", "River Campfire", "Escrow Protection"],
     cancellationPolicy: "100% automated refund on highway weather alerts.",
     emergencyContact: "Host Vikram: +91 98765 43211.",
-    regionalGuidelines: "Check Uttarkashi-Harsil highway status via AgroSafe console before driving.",
+    regionalGuidelines: "Check Uttarkashi-Harsil highway status via KhetYatra console before driving.",
   },
 ];
 
@@ -832,7 +832,7 @@ export const PAYMENT_ESCROWS: PaymentEscrow[] = [
         transactionType: "Charge",
         amount: 13950,
         gatewayRef: "rzp_live_984128941",
-        note: "Initial booking charge captured and locked in AgroSafe Escrow Vault.",
+        note: "Initial booking charge captured and locked in KhetYatra Escrow Vault.",
         processedAt: "2026-08-02 08:52",
       },
     ],

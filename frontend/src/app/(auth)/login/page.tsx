@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { AuthCard } from "@/components/auth/auth-card";
 
-export const metadata = { title: "Sign In / Register — AgroSafe Travel" };
+export const metadata = { title: "Sign In / Register — KhetYatra" };
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 

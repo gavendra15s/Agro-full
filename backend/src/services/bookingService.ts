@@ -277,7 +277,7 @@ export const createBookingWithEscrow = async (data: {
     transaction_type: "Charge",
     payment_gateway_ref: gateway_ref,
     amount: total_charged,
-    note: "Initial booking charge authorized & funds locked in AgroSafe Escrow Vault.",
+    note: "Initial booking charge authorized & funds locked in KhetYatra Escrow Vault.",
   });
 
   // 5. Log booking status transition

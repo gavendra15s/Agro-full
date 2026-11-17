@@ -43,7 +43,7 @@ export const releaseEscrowToHost = async (paymentId: number, note?: string) => {
       booking_id: payment.bookings.id,
       previous_status: "Active",
       new_status: "Completed",
-      reason: "Guest checkout confirmed. Payout triggered via AgroSafe Lifecycle Pipeline.",
+      reason: "Guest checkout confirmed. Payout triggered via KhetYatra Lifecycle Pipeline.",
     });
   }
 
